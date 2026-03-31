@@ -416,7 +416,15 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
                 db.users = (ur.data || []).map(u => ({ id: u.id, name: u.name, email: u.email, company: u.company, avatar: u.avatar_url, level: u.level, pts: u.points||0, stamps: {}, lastCultureTrack: '' }));
                 db.reports = (rr.data || []).map(r => ({...r, reporterId: r.reporter_id, image: r.image_url, date: new Date(r.created_at).toLocaleDateString() }));
                 db.kudos = (kr.data || []).map(k => ({...k, receiverId: k.receiver_id, senderId: k.sender_id, date: new Date(k.created_at).toLocaleDateString() }));
-                db.culture_checks = (cr.data || []).map(c => ({...c, userId: c.user_id, value: c.value_json, date: new Date(c.created_at).toISOString() }));
+                db.culture_checks = (cr.data || []).map(c => ({...c, userId: c.user_id, type: c.type, value: c.value_json, date: new Date(c.created_at).toLocaleDateString() }));
+
+                // Restaurar lastCultureTrack calculando el último test hecho en la nube
+                db.users.forEach(u => {
+                    const susChecks = db.culture_checks.filter(c => c.userId === u.id && c.type === 'culture_likert');
+                    if(susChecks.length > 0) {
+                        u.lastCultureTrack = susChecks[susChecks.length - 1].date; // El ultimo emitido
+                    }
+                });
 
             } catch(e) {
                 console.error("Nube Inaccesible", e);
@@ -625,10 +633,13 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
                 // Usar API Nube simulada
                 await api.submitDailyCheck(u.id, 'culture_likert', tempLikert);
                 
+                u.lastCultureTrack = new Date().toLocaleDateString(); // Evita que vuelva a saltar en esta sesión
+                
                 document.getElementById('cultureModal').remove();
                 addPoints(5, "Tracking de Cultura completado");
             } catch (e) {
-                btn.innerText = "GUARDAR (+5 pts)"; btn.style.opacity = '1';
+                btn.innerText = "Error - Reintentar"; btn.style.opacity = '1';
+                alert("Error base de datos: " + e.message);
             }
         }
 
