@@ -1,0 +1,154 @@
+// schema.prisma
+// Base de Datos PostgreSQL para PWA Pasaporte de Seguridad (Enresa)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------- ENUMS ----------------------
+enum Role {
+  WORKER
+  SUPERVISOR
+  ADMIN
+}
+
+enum CertType {
+  Inicial_CS
+  Continua_CS
+  Continua_FHO
+  SFH
+}
+
+enum ReportStatus {
+  PENDIENTE
+  EN_PROCESO
+  RESUELTO
+  DESCARTADO
+}
+
+// ---------------------- MODELOS ----------------------
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  nombre         String
+  apellidos      String
+  email          String   @unique
+  passwordHash   String
+  empresa        String
+  foto_perfil    String?  // URL a AWS S3
+  nivel_actual   String   @default("Trabajador Seguro") // Novato, Observador, Trabajador...
+  puntos_totales Int      @default(0)
+  rol            Role     @default(WORKER)
+  createdAt      DateTime @default(now())
+
+  // Relaciones
+  kudosEnviados      KudosLog[]         @relation("KudosEmitidos")
+  kudosRecibidos     KudosLog[]         @relation("KudosRecibidos")
+  certificaciones    Certification[]
+  reportesSim        SimReport[]
+  trackingDiario     TrackingDiario[]
+  termometroFho      TermometroFho[]
+  briefingsLiderados PreJobBriefing[]   @relation("BriefingSupervisor")
+  briefingsAsistidos BriefingAttendee[]
+}
+
+model KudosLog {
+  id                   String   @id @default(uuid()) @db.Uuid
+  fecha                DateTime @default(now())
+  expectativa_cumplida String
+  mensaje              String   @db.Text
+
+  // Foreign keys
+  emisor_id   String @db.Uuid
+  receptor_id String @db.Uuid
+  emisor      User   @relation("KudosEmitidos", fields: [emisor_id], references: [id])
+  receptor    User   @relation("KudosRecibidos", fields: [receptor_id], references: [id])
+}
+
+model Certification {
+  id             String   @id @default(uuid()) @db.Uuid
+  user_id        String   @db.Uuid
+  tipo_formacion CertType
+  fecha          DateTime @default(now())
+  qr_reference   String   @unique // Auditoría del QR del instructor escaneado
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model FichaEc {
+  id                    String @id @default(uuid()) @db.Uuid
+  id_expectativa        Int    // 1-8
+  texto_comportamiento  String
+  imagen_url            String // AWS S3 - Herramienta E+C
+  palabra_clave         String
+  pregunta_reflexiva    String @db.Text
+
+  briefingsAsociados PreJobBriefing[]
+}
+
+model SimReport {
+  id          String       @id @default(uuid()) @db.Uuid
+  user_id     String       @db.Uuid
+  foto_url    String?      // AWS S3
+  descripcion String       @db.Text
+  estado      ReportStatus @default(PENDIENTE)
+  timestamp   DateTime     @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model TrackingDiario {
+  id             String   @id @default(uuid()) @db.Uuid
+  user_id        String   @db.Uuid
+  fecha          DateTime // Date type (truncada a día)
+  afirmacion_id  Int
+  grado_acuerdo  Int      // 1-5 (Likert)
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model TermometroFho {
+  id               String   @id @default(uuid()) @db.Uuid
+  user_id          String   @db.Uuid
+  fecha            DateTime
+  carga_fisica     Int      // 1-5
+  carga_mental     Int      // 1-5
+  apoyo            Int      // 1-5
+  interrupciones   Int      // 1-5
+  presion_tiempo   Int      // 1-5
+  procedimientos   Int      // 1-5
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model PreJobBriefing {
+  id               String   @id @default(uuid()) @db.Uuid
+  supervisor_id    String   @db.Uuid
+  ficha_id         String   @db.Uuid
+  qr_token         String   @unique // Hash del QR generado en vivo
+  timestamp        DateTime @default(now())
+  activo           Boolean  @default(true) // Si está false, el QR caduca para registro
+
+  supervisor User      @relation("BriefingSupervisor", fields: [supervisor_id], references: [id])
+  ficha      FichaEc   @relation(fields: [ficha_id], references: [id])
+  asistentes BriefingAttendee[]
+}
+
+model BriefingAttendee {
+  id           String   @id @default(uuid()) @db.Uuid
+  briefing_id  String   @db.Uuid
+  worker_id    String   @db.Uuid
+  scanned_time DateTime @default(now())
+
+  briefing PreJobBriefing @relation(fields: [briefing_id], references: [id])
+  worker   User           @relation(fields: [worker_id], references: [id])
+
+  @@unique([briefing_id, worker_id]) // Evita doble registro del operario
+}

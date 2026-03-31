@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Base de Datos Relacional de Producción
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: enresa-db
+    restart: always
+    environment:
+      POSTGRES_USER: devops
+      POSTGRES_PASSWORD: securePassword123
+      POSTGRES_DB: pasaporte_seguridad
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - enresa-net
+
+  # API Backend Node.js
+  backend-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: enresa-backend
+    restart: always
+    depends_on:
+      - postgres-db
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://devops:securePassword123@postgres-db:5432/pasaporte_seguridad?schema=public
+      - JWT_SECRET=EnresaSecureTokenForPasaporte
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_S3_BUCKET_NAME=enresa-pasaporte-storage
+    ports:
+      - "3000:3000"
+    networks:
+      - enresa-net
+
+volumes:
+  pg-data:
+
+networks:
+  enresa-net:
+    driver: bridge

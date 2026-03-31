@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pasaporte de Seguridad | Enresa</title>
+    <meta name="theme-color" content="#0d2b1d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+    <link rel="manifest" href="manifest.json">
+    <!-- PREPARACIÓN FIREBASE (CLOUD-READY) -->
+    <!-- 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        
+        const firebaseConfig = { apiKey: "XXX", authDomain: "XXX", projectId: "XXX", storageBucket: "XXX", messagingSenderId: "XXX", appId: "XXX" };
+        const app = initializeApp(firebaseConfig);
+        window.cloudAuth = getAuth(app);
+        window.cloudDb = getFirestore(app);
+    </script>
+    -->
+    <style>
+        /* VARIABLES MODERNAS */
+        :root {
+            --green-brand: #007A33;
+            --green-dark: #004c20;
+            --green-dim: #002b12;
+            --green-neon: #00df5d;
+            --gold: #d4af37;
+            --gold-dark: #aa8620;
+            --red: #ff4757;
+            --red-neon: #ff6b81;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --bg-base: #f8fafc;
+            /* Pasaporte Realista */
+            --passport-cover: #0d2b1d; /* Verde muy oscuro casi azulado marino */
+            --passport-paper: #f4f0ec; /* Papel ahuesado */
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 122, 51, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent;}
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main); background: var(--bg-base);
+            height: 100vh; width: 100vw; overflow: hidden;
+            position: relative;
+        }
+        h1, h2, h3, .font-heading { font-family: 'Outfit', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+
+        .text-green { color: var(--green-brand) !important; }
+        .text-gold { color: var(--gold) !important; }
+        .text-sm { font-size: 0.85rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        .flex { display: flex; }
+        .flex-col { display: flex; flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .center-text { text-align: center; }
+        
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 20px; margin-bottom: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        #app { height: 100vh; overflow-y: auto; overflow-x: hidden; max-width: 600px; margin: 0 auto; scroll-behavior: smooth; }
+        .main-padding { padding: calc(85px + env(safe-area-inset-top, 0)) 20px calc(110px + env(safe-area-inset-bottom, 0)); }
+
+        /* CABECERA TOP */
+        .header {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            height: calc(75px + env(safe-area-inset-top, 0));
+            padding: env(safe-area-inset-top, 0) 20px 0;
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05); transition: 0.3s;
+        }
+        .header.hidden { transform: translateY(-100%); }
+        .logo-box { display: flex; align-items: center; gap: 8px; font-family: 'Outfit'; font-size: 1.3rem; font-weight: 800; color:var(--green-brand); }
+        .level-pill { background: var(--green-brand); color: white; display: flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; }
+
+        /* BARRA INFERIOR DE NAVEGACIÓN */
+        .bottom-nav {
+            position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 100;
+            width: calc(100% - 30px); max-width: 500px;
+            height: 70px; display: flex; justify-content: space-around; align-items: center;
+            background: rgba(20, 30, 24, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-radius: 35px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: 0.3s;
+        }
+        .bottom-nav.hidden { transform: translate(-50%, 150%); }
+        .nav-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; transition: 0.3s; }
+        .nav-btn .icon { font-size: 26px; transition: 0.3s; }
+        .nav-btn .label { font-size: 0.65rem; font-weight: 600; font-family: 'Outfit'; opacity: 0; transform: translateY(10px); height: 0; }
+        .nav-btn.active { color: var(--green-neon); }
+        .nav-btn.active .icon { transform: translateY(-4px); font-variation-settings: 'FILL' 1; }
+        .nav-btn.active .label { opacity: 1; transform: translateY(0); height: auto; }
+        .nav-spacer { width: 60px; }
+
+        /* BOTÓN FLOTANTE CAZADORES (SOS/CÁMARA) */
+        .fab-container { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 110; transition: 0.3s; }
+        .fab-container.hidden { transform: translate(-50%, 200px); }
+        .fab {
+            width: 70px; height: 70px; border-radius: 35px; border: none;
+            background: linear-gradient(135deg, var(--red-neon), var(--red));
+            color: white; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 25px rgba(255, 71, 87, 0.4); border: 4px solid #fff;
+            cursor: pointer; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .fab:hover { transform: scale(1.05); }
+        .fab:active { transform: scale(0.9); }
+        .fab .icon { font-size: 34px; }
+
+        /* ================== PANTALLAS ESPECÍFICAS ================== */
+        
+        /* 1. PORTADA PASAPORTE (Hiperrealista) */
+        .passport-cover {
+            background-color: var(--passport-cover);
+            /* Textura de cuero generada con SVG noise y multiples texturas radiales */
+            background-image: 
+                radial-gradient(ellipse at 50% 10%, rgba(255,255,255,0.08) 0%, transparent 60%),
+                url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.08"/></svg>');
+            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--gold); 
+            border: 1px solid rgba(0,0,0,0.8);
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.9), inset 5px 0 10px rgba(255,255,255,0.1);
+            position: relative; z-index: 200; cursor: pointer;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: left center;
+        }
+        /* Bordado cosido lateral */
+        .passport-cover::before {
+            content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 4px;
+            background: repeating-linear-gradient(0deg, transparent, transparent 5px, rgba(0,0,0,0.4) 5px, rgba(0,0,0,0.4) 15px);
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .passport-cover.open { transform: rotateY(-180deg) perspective(1500px); }
+        
+        .gold-foil {
+            color: transparent;
+            background: linear-gradient(135deg, #d4af37 0%, #fffcb0 30%, #d4af37 60%, #8a6d1c 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            filter: drop-shadow(0px 1px 0px rgba(255,255,255,0.3)) drop-shadow(0px -1px 1px rgba(0,0,0,0.8));
+            text-align: center;
+        }
+
+        /* Logo Oficial de Garoña para Portada */
+        .garona-logo-img {
+            width: 180px; height: auto; margin: 30px 0;
+            object-fit: contain;
+            filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.5));
+        }
+
+        /* 2. REGISTRO */
+        .page-bg { background: var(--passport-paper); min-height: 100vh; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items:center; background-image: repeating-linear-gradient(45deg, rgba(0,122,51,0.02) 0px, rgba(0,122,51,0.02) 2px, transparent 2px, transparent 10px);}
+        .input-field { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid rgba(0,0,0,0.1); font-size: 1rem; margin-bottom: 12px; font-family: 'Inter'; background: white; outline:none; transition:0.3s;}
+        .input-field:focus { border-color: var(--green-brand); }
+        .btn-action { width: 100%; padding: 18px; border-radius: 16px; border: none; font-family: 'Outfit'; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: 0.2s; background: var(--green-brand); color: white; box-shadow: 0 8px 16px rgba(0, 122, 51, 0.2); }
+        .btn-action:active { transform: scale(0.96); box-shadow: 0 4px 8px rgba(0, 122, 51, 0.2); }
+        .avatar-upload { width: 120px; height: 120px; border-radius: 60px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; border: 3px dashed rgba(0,0,0,0.2); margin: 0 auto 20px; cursor: pointer; overflow:hidden; position:relative;}
+        .avatar-upload img { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; pointer-events:none;}
+
+        /* 3. HOME (INTERIOR PASAPORTE) */
+        .id-card { background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); padding: 20px; display: flex; gap: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+        .id-card::before { content: ''; position: absolute; top:0; right:0; width: 60px; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,122,51,0.05) 0, rgba(0,122,51,0.05) 1px, transparent 1px, transparent 10px); }
+        .id-photo { width: 100px; height: 130px; border-radius: 8px; background: #eee; object-fit: cover; border: 2px solid var(--green-brand); }
+        .id-data { flex: 1; display:flex; flex-direction:column; justify-content:center; }
+        .id-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .id-val { font-family: 'Outfit'; font-weight: 700; font-size: 1.1rem; color: var(--text-main); margin-bottom: 8px; }
+        
+        .progress-track { background: rgba(0,0,0,0.05); height: 12px; border-radius: 6px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { background: linear-gradient(90deg, var(--green-brand), var(--green-neon)); height: 100%; border-radius: 6px; transition: width 1.2s; }
+
+        /* 4. ROADMAP (CAMINO DEL PROFESIONAL) */
+        .roadmap-container { padding: 20px 0; position:relative; }
+        .roadmap-line { position: absolute; left: 40px; top: 30px; bottom: 30px; width: 4px; background: rgba(0,0,0,0.1); z-index: 1;}
+        .roadmap-fill { position: absolute; left: 40px; top: 30px; width: 4px; background: var(--green-brand); z-index: 2; transition: 1s;}
+        .node { display: flex; align-items: center; gap: 20px; margin-bottom: 40px; position: relative; z-index: 3; }
+        .node-icon { width: 44px; height: 44px; border-radius: 22px; background: white; border: 3px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-muted); transition: 0.3s;}
+        .node.active .node-icon { border-color: var(--green-brand); color: white; background: var(--green-brand); box-shadow: 0 0 15px rgba(0,122,51,0.4);}
+        .node.future .node-icon { opacity: 0.5; }
+
+        /* 5. SELLOS Y QR */
+        .stamp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top:20px; }
+        .stamp-box { aspect-ratio: 1; border: 2px dashed rgba(0,0,0,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative;}
+        .stamp-img { width: 80%; height: 80%; object-fit: contain; animation: stampPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: rotate(deg); }
+        @keyframes stampPop { 0% { transform: scale(3) rotate(-20deg); opacity:0; } 100% { transform: scale(1) rotate(v-bind(rot)); opacity:0.8; } }
+        
+        .mock-scanner { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index: 3000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .scanner-frame { width: 250px; height: 250px; border: 4px solid var(--green-neon); position: relative; margin-bottom:20px;}
+        .scanner-line { width: 100%; height: 2px; background: var(--green-neon); position: absolute; top:0; animation: scanAnim 2s infinite linear; box-shadow: 0 0 10px var(--green-neon); }
+        @keyframes scanAnim { 0% { top:0; } 50% { top: 100%; } 100% { top: 0; } }
+
+        /* 6. POPUP CULTURA (PUSH / DIARIO) */
+        .modal-overlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); z-index: 4000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(5px); }
+        .modal-box { background: white; width: 90%; max-width: 400px; border-radius: 20px; padding: 30px 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+        .likert { display: flex; justify-content: space-between; margin: 20px 0; }
+        .likert-btn { width: 45px; height: 45px; border-radius: 22.5px; border: 2px solid rgba(0,0,0,0.1); background: white; font-family:'Outfit'; font-weight:700; font-size:1.1rem; cursor:pointer; transition:0.2s; }
+        .likert-btn:active { transform: scale(0.9); }
+        .likert-btn.selected { background: var(--green-brand); color: white; border-color: var(--green-brand); }
+
+        /* 7. KUDOS AUTOCOMPLETE & TABS */
+        .kudos-tabs { display:flex; background:rgba(0,0,0,0.05); border-radius:12px; padding:5px; margin-bottom:20px; }
+        .k-tab { flex:1; text-align:center; padding:10px; font-family:'Outfit'; font-weight:700; font-size:0.85rem; border-radius:8px; cursor:pointer; color:var(--text-muted); transition:0.3s; border:none; background:transparent;}
+        .k-tab.active { background:white; color:var(--green-brand); box-shadow:0 4px 10px rgba(0,0,0,0.05); }
+        .k-feed-card { display:flex; gap:15px; padding:15px; border-bottom:1px solid rgba(0,0,0,0.05); text-align: left; }
+        .k-feed-card:last-child { border-bottom:none; }
+        .k-feed-avatar { width:40px; height:40px; border-radius:20px; object-fit:cover; }
+        
+        .autocomplete-list { background:white; border-radius:12px; box-shadow:0 10px 20px rgba(0,0,0,0.1); margin-top:5px; max-height:150px; overflow-y:auto; border: 1px solid rgba(0,0,0,0.05);}
+        .ac-item { padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; transition:0.2s;}
+        .ac-item:active { background: rgba(0,122,51,0.1); }
+        select.input-field { appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); background-repeat: no-repeat; background-position-x: 95%; background-position-y: center; }
+
+        /* 8. TERMÓMETRO SLIDERS/EMOJIS */
+        .fho-question { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .emoji-flex { display: flex; justify-content: space-between; margin-top:10px;}
+        .emoji-item { font-size: 2.2rem; filter: grayscale(1); opacity: 0.4; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
+        .emoji-item.active { filter: grayscale(0); opacity: 1; transform: scale(1.3); }
+
+        /* 9. EC TOOL (Tarjetas Ficha Realismo) */
+        .ec-frame {
+            background: #fff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15), inset 0 0 0 4px var(--green-brand);
+            position: relative;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .ec-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--green-brand); padding-bottom: 10px; margin-bottom: 15px; }
+        .ec-title { font-family: 'Outfit'; font-weight: 800; font-size: 0.9rem; color: var(--green-brand); text-transform: uppercase; letter-spacing: 1px; }
+        .ec-badge { background: var(--green-brand); color: white; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;}
+        .ec-photo { width: 100%; height: 220px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .ec-kw { background: #f1f5f9; display: inline-block; padding: 5px 12px; border-radius: 6px; font-family: 'Outfit'; font-weight: 800; color: #334155; margin-bottom: 10px; border-left: 4px solid var(--gold); }
+        
+        .quiz-option { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: rgba(0,0,0,0.03); border: 2px solid transparent; text-align: left; font-family: 'Inter'; font-weight: 500; cursor: pointer; transition: 0.2s;}
+        .quiz-option.correct { background: var(--green-brand); color: white; border-color: var(--green-brand); }
+        .quiz-option.wrong { background: var(--red); color: white; border-color: var(--red); }
+
+        /* 10. CAZADORES FORM */
+        textarea.input-field { resize: none; min-height: 120px; }
+
+        /* UTILIDADES GLOBALES */
+        #toasts { position: fixed; top: calc(85px + env(safe-area-inset-top, 0)); left: 20px; right: 20px; z-index: 5000; pointer-events: none; display: flex; flex-direction: column; align-items: center; }
+        .toast-msg { background: #1e293b; color: #fff; padding: 14px 20px; border-radius: 30px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; max-width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { opacity: 0; transform: translateY(-20px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    </style>
+</head>
+<body>
+
+    <svg width="0" height="0" style="position:absolute;">
+        <defs>
+            <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#d4af37" />
+                <stop offset="40%" stop-color="#fffcb0" />
+                <stop offset="60%" stop-color="#d4af37" />
+                <stop offset="100%" stop-color="#8a6d1c" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div id="toasts"></div>
+
+    <header class="header hidden" id="main-header">
+        <div class="logo-box">
+            <span class="material-symbols-rounded">gpp_good</span> 
+            <span>Pasaporte SG</span>
+        </div>
+        <div class="level-pill" onclick="go('roadmap')">
+            <span class="material-symbols-rounded" style="font-size: 18px;">military_tech</span>
+            <span id="uLv">1</span>
+        </div>
+    </header>
+
+    <main id="app"></main>
+
+    <nav class="bottom-nav hidden" id="main-nav">
+        <button class="nav-btn active" id="tab-home" onclick="go('home')">
+            <span class="material-symbols-rounded icon">contact_page</span>
+            <span class="label">Perfil</span>
+        </button>
+        <button class="nav-btn" id="tab-roadmap" onclick="go('roadmap')">
+            <span class="material-symbols-rounded icon">map</span>
+            <span class="label">Ruta</span>
+        </button>
+        
+        <div class="nav-spacer"></div>
+        
+        <button class="nav-btn" id="tab-kudos" onclick="go('kudos')">
+            <span class="material-symbols-rounded icon">star</span>
+            <span class="label">Kudos</span>
+        </button>
+        <button class="nav-btn" id="tab-fatigue" onclick="go('fatigue')">
+            <span class="material-symbols-rounded icon">psychology</span>
+            <span class="label">Fatiga</span>
+        </button>
+    </nav>
+
+    <!-- CAZADORES DE SEÑALES FAB -->
+    <div class="fab-container hidden" id="main-fab">
+        <button class="fab" id="fabBtn" onclick="go('cazadores')">
+            <span class="material-symbols-rounded icon">emergency</span>
+        </button>
+    </div>
+
+    <script>
+        /* ================= 1. MOCK DATABASE (LocalStorage) ================= */
+        const IS12_RAW = `AMBULANCIAS RODRIGO: Sandra Pinto Tortajada
+APPLUS: Pablo Amaro Aragunde, Jose Andres Bacelo Rizaldos, Unai Mayor Sánchez, José Rodríguez Prieto
+ARS FACTUM: Fco Javier Miguel Diez, Roberto Rubio Bartolome
+DMIM: Oliver Bono Cantrabrana, Jose Luis Garcia Garcia-Galdiano, Luis Javier Martin del Pino, Adrián Morote Oria, Alvaro Sanz Tudanca, Santiago L. Vegas Gutierrez
+DRACE: Carlos Macia Bartolome, Ianire Ansoleaga Varona, Lara Arce Martinez, Victoria Collado Rueda, Maria Angeles Escribano Lain, Juan Ignacio Fernandez Artola, Javier Garrido Alcalde, Lara Gonzalez Robles
+EMPRESARIOS AGRUPADOS: Beatriz Bolado Castro, Francisco Javier Calvo Lozares, Monica Diez Truchuelo, Jorge Juan Encina González, Ignacio Javier Minguito Sancho, Jose Antonio Moreno Gonzalez
+ENRESA: Elvira Olaya Pardo, Manuel Ondaro del Pino, Oscar Gonzalez Corral, Eduardo Hernandez Lopez, Alberto Molero Fernandez, Luis David Garcia Metola, Felisa Lopez Castillo, Mª Nieves Sanchez Losa, Jesus Sebastian Alfaro, Ana Mar Urquijo Gonzalez, Maria Concepción Yepes Ruiz, Ana Martin Aguado, Montserrat Perez Camacho, Alberto Alcantara Carreño, Alvaro Cortes Robledo, Alberto Sanchez Lopez, Antonio Valenzuela Enciso, Jaime Carranza Ortiz, Jesus De la Fuente Cañibano, Francisco Javier Menendez Garcia, Javier Duran Lopez, Angel Contreras Sanz, Tadeo Tey Espinosa, Marta Gomez de Gracia, Joaquin Sanchez Becerra, Jose Fernando Sanchez Marcos, Alfonso Tapia Frias, Jose Manuel Zaguirre Altuna, Juan Manuel Gutierrez Aguilar, Juan Ramon Zuloaga Aylagas
+EULEN: Diego Acero Pradera, Saul Alonso Izquierdo, Ivan Arevalillo Fernández, Iñigo Baranda Pascual, Miguel Blanco Mantilla, Miguel Campos Fernández, Julian Cano Vazquez, Luis Angel Del Barrio Unquera, Asier Fernandez Bañuelos, Diego Garcia Avellaneda, Francisco Javier Garcia Dominguez, Ricardo González Alonso, Urtzi Guerrero Rico, Jorge Gutierrez Andrade, José Alberto Herrero Merino, David Laredo Gonzalez, Eduardo Lopez Alonso, David Lopez Garcia, Sergio Marquinez Gonzalez, Javier Martinez Iturralde, Marcos Mijangos Barredo, Santiago Mijangos Brizuela, Francisco Moreno Rojo, Juan Carlos Muntion Ruesgas, Raul Navarro Rodriguez, Jose Ochoa Martinez, Hector Ortiz de Pinedo Viejo, David Pérez Herrero, Luis Rojo Sarachaga, Saul Ruiz Bañuelos, Zigor Ruiz D Loizaga Martinez D Santos, Jaime Ruiz Lopez, Fernando Solana Heras, Pablo Vegas Somoza, Manuel Vilda Saezmiera, Josu Remiro Urrutia
+G&M: Ana Maria Calvo Garcia
+HELGESON: Jaime Arranz Peña
+IDOM: Antonio Campillo Diaz, Eduardo Fernández García, Agustin Alejandro Lopez Piastrelini, Celestino Melgosa Escaño, Enrique Monfort Blasco
+IGNEO: Cesar Yague Casado
+ITM: María Fernández de Obeso
+MARSEIN: Ivan Cespedes Rodriguez, Fernando Gonzalez Corrales, Daniel Gonzalez Reyes, Jorge Daniel Liberatore, Eduardo Gonzalez Pereda, Luis Enrique Letona Susinos, Gabriel Lopez Mijangos, Felix Angel Lopez Reyes, Luis Martin Villafafila, Alberto Miguel Martínez Alonso, Juan Antonio Perrino Lamas, Federico Arturo Queralto Rey, Aitor Rodriguez Amilibia, Gustavo Valderrama Baza, Jose Luis Vicario Espinosa
+MEDIDAS AMBIENTALES: Ruben Calvo Ruiz, Victor Santamaría Gómez
+MONLAIN: Asier García García, David Pinedo Perez
+NUCLENOR: Francisco Javier Coco Lopez, Jose Luis Fernandez Herran, Alberto Fernandez Pacheco, Bernabe Gallego Montero, Luis Angel Gomez Bombin, Guillermo Gonzalez Garcia, Venancio Lozano Herrera, Constantino Martinez Fernandez, Valentin Daniel Mazo Santander, Luis Angel Miguel Gomez, Roberto Ortega Escudero, Patricia Sedano Pulido, Julian Jose Vielva Montes, Ruben Zarate Barron, Arturo Baldero Perez de Burgos, Felix Camarero Bravo, Manuel Campos Gutierrez, Vicente De Blas Cabañes, Eduardo España Artiguez, Francisco Javier Fernandez Cuesta, Javier Gonzalez Corral, Aurelio Gutierrez Gonzalez, Carlos Mijangos Fernandez, Ernesto Ortiz Rico, Jose Ramon Quintana Rodriguez, Julio Alfonso Soto Gonzalo, Alvaro Campuzano Bolado, Javier Aizpuru Gomez, Francisco Calva Gutierrez, Rafael Cantera Solano, Jose Carlos Diez Macho, Jose Gonzalez Corral, Javier Rodriguez-Parets Gonzalez-Pinto, Luis Manuel Valcarcel de la Vega, Jose Manuel Yarritu Garcia, Miguel Angel Adrados Solana, Carlos Angulo Gomez, Jose Antonio Cayon Llarena, Angel Felez Justes, Jose Vicente Lopez Montero, Miguel Angel Magan Lopez, Miguel Angel Manso Puras, Ramiro Marcos Gomez, Juan Maria Ortiz Diego, Antonio Riaza Contreras, Pedro Romon Morquillas, Rodolfo Sandoya Arozamena, Antonio Toca Otero, Roberto Villanueva Montejo, Fco. Jose Gutierrez Iñiguez, Jose Luis Nebreda Ibañez, Eduardo Jesus Obeso Torices, Luis Santiago Alonso Gutierrez, Manuel Garcia Sanchez, Jose Carlos Iglesias Arribas
+PROINSA: Ekaitz Arranz Casado, Adrian Cortinas Muñoz, Jesús Fernández Matilla, Jose Ignacio García García, Carlos Lopez Ezquerra, Sergio Sopa Hierro, Mario Vielva Melendez, Jose Luis Barrio Zarate, Tomas Blanco Diego, Carlos Canales Casado, Jose Antonio Carpizo Martin, Ivan Catediano Felipe, Juan Antonio Fernandez Zan, Rafael Ferreira Da Silva, Sonia Gonzalez Menoyo, Yaiza Iriarte González, Fco. Javier Lopez Castillo, Fco Javier Madrid García, Nicolás Martínez López, Jesus Miguel Martinez Manzanos, Jonathan Mediavilla Peso, Javier Miró Villalba, Juan Carlos Quintana Rodriguez, Cristina Ramos Corredor, Borja Salazar Carcamo, Jose Alegre Asla, Elena Blasco Perez, Ana Chamorro Gordejuela, Barbara Martin Gutierrez, Gonzalo Martinez Amas, Jose Olivares Soriano, Jose David Pedrosa Sanchez, Maria Begoña Peña Peña
+QUIRON: Patricia Arrojo Llera, Manuel Garcia Martinez
+SERVEO: Jesus Barriocanal de la Iglesia, Montserrat Basurto Linaje, Juan Ramón Carril Hermida, Alfonso Cespedes Ortiz, Aksu Erol Hassan, Victor Ochoa Angulo, Andres Puerta Hurtado, Yuriy Sakenco Sierra
+VITALY: Claudia Arribas Dorao, Ruth González Fernandez, Belén Amor Soto
+WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
+
+        const EMPLOYEES = [];
+        const COMPANIES = [];
+        IS12_RAW.split('\\n').filter(Boolean).forEach((line, index) => {
+            let parts = line.split(':');
+            if (parts.length < 2) return;
+            let comp = parts[0].trim();
+            COMPANIES.push(comp);
+            parts[1].split(',').forEach(n => {
+                EMPLOYEES.push({ name: n.trim(), company: comp, avatar: 'https://i.pravatar.cc/150?u=' + encodeURIComponent(n.trim()) });
+            });
+        });
+
+        const EXPECTATIONS = [
+            'Uso excelente de TMEH', 'Actitud Cuestionadora excepcional', 'Identificación de peligro no evidente',
+            'Colaboración y trabajo en equipo', 'Aceptar una crítica constructiva', 'Hacer las cosas cada vez mejor'
+        ];
+        
+        const LEVELS_REQ = [0, 100, 250, 500, 1000];
+        const LEVELS_NAMES = ['Novato de Seguridad', 'Observador Atento', 'Trabajador Seguro', 'Profesional Nuclear', 'Embajador de Seguridad'];
+        const LEVELS_ICONS = ['eco', 'visibility', 'shield', 'engineering', 'workspace_premium'];
+        
+        const TRAININGS = {
+            'ini': { name: 'Formación Inicial CS y FH', pts: 50, icon: 'school', color: 'var(--gold)' },
+            'con': { name: 'Formación Continua CS y FH', pts: 50, icon: 'autorenew', color: 'var(--green-neon)' },
+            'sim': { name: 'Entren. Simulador FHO', pts: 100, icon: 'psychology', color: 'var(--red-neon)' }
+        };
+        
+        // Imágenes Públicas Unsplash e Inclinadas a Industria para prevenir fallos CORS
+        const EC_IMAGES = [
+            "https://images.unsplash.com/photo-1541888086425-d81bb19240f5?auto=format&fit=crop&q=80&w=600",
+            "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&q=80&w=600",
+            "https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=600",
+            "https://images.unsplash.com/photo-1621622340248-cb86ef10fb4e?auto=format&fit=crop&q=80&w=600"
+        ];
+
+        let db = {
+            currentUserId: null,
+            users: [],
+            kudos: [],
+            reports: [],
+            fatigue: [],
+            culture_checks: [] // NUEVO: Historial Real de checks y termómetro para Cloud
+        };
+
+        function getActiveUser() {
+            if(!db.currentUserId) return null;
+            return db.users.find(u => u.id === db.currentUserId) || null;
+        }
+
+        function initDB() {
+            const saved = localStorage.getItem('enresa_pwd_advanced');
+            if(saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if(parsed.user || (parsed.users && parsed.users.length < EMPLOYEES.length - 10)) { 
+                        // Migración para forzar la actualización del listín IS-12 2026 en dispositivos antiguos
+                        db.currentUserId = parsed.currentUserId || null;
+                        db.users = EMPLOYEES.map((e, idx) => ({ id: 'usr_'+idx, name: e.name, company: e.company, avatar: e.avatar, level:1, pts:0, stamps:{}, lastCultureTrack:'' }));
+                        
+                        // Si existía un usuario activo lo restauramos
+                        if(db.currentUserId && parsed.users) {
+                            const act = parsed.users.find(u => u.id === db.currentUserId);
+                            if(act && !db.users.find(u => u.id === act.id)) db.users.push(act);
+                        }
+
+                        db.kudos = parsed.kudos || [];
+                        db.reports = parsed.reports || [];
+                        db.culture_checks = parsed.culture_checks || [];
+                    } else {
+                        db = parsed;
+                    }
+                } catch(e) {}
+            } else {
+                db.users = EMPLOYEES.map((e, idx) => ({ id: 'usr_'+idx, name: e.name, company: e.company, avatar: e.avatar, level:1, pts:0, stamps:{}, lastCultureTrack:'' }));
+                db.kudos = [
+                    { id: 'k_mock1', senderId: 'usr_2', receiverId: 'usr_test', reason: 'Colaboración y trabajo en equipo', msg: 'Gracias por tu ayuda detectando la válvula incorrecta.', date: new Date().toLocaleDateString() }
+                ];
+                db.reports = [];
+                db.culture_checks = [];
+            }
+        }
+        function saveDB() {
+            localStorage.setItem('enresa_pwd_advanced', JSON.stringify(db));
+        }
+
+        /* ================= 1.5 DATA ACCESS LAYER (API FIREBASE MOCK) ================= */
+        // Estas funciones devuelven Promesas para simular la asincronía de la nube real.
+        const api = {
+            delay: ms => new Promise(r => setTimeout(r, ms)),
+            
+            async registerUser(name, email, pwd, comp, avatarBase) {
+                await this.delay(600); // Simulando auth.createUserWithEmailAndPassword
+                const newId = 'usr_' + Date.now();
+                db.currentUserId = newId;
+                db.users.push({
+                    id: newId, name: name, email: email, company: comp, avatar: avatarBase,
+                    level: 1, pts: 0, stamps: {}, lastCultureTrack: '', pendingSignal: false, signalDate: null
+                });
+                saveDB();
+                return getActiveUser();
+            },
+            
+            async submitDailyCheck(userId, type, valueObj) {
+                await this.delay(300); // Simulando await addDoc(collection(db, 'culture_checks'))
+                db.culture_checks.push({
+                    id: 'chk_' + Date.now(),
+                    userId: userId,
+                    type: type, // 'culture_likert' o 'fatigue_thermometer'
+                    value: valueObj,
+                    date: new Date().toISOString()
+                });
+                
+                const u = db.users.find(x => x.id === userId);
+                if(u && type === 'culture_likert') u.lastCultureTrack = new Date().toLocaleDateString();
+                saveDB();
+            },
+            
+            async sendKudo(targetId, reason, msg) {
+                await this.delay(500);
+                db.kudos.unshift({
+                    id: 'k_' + Date.now(), senderId: db.currentUserId, receiverId: targetId, reason: reason, msg: msg, date: new Date().toLocaleDateString()
+                });
+                saveDB();
+            },
+            
+            async sendQuickReport(txt, image64 = null) {
+                await this.delay(500);
+                db.reports.push({
+                    id: 'r_' + Date.now(), reporterId: db.currentUserId, text: txt, image: image64, status: 'Pendiente', date: new Date().toLocaleDateString()
+                });
+                const u = getActiveUser();
+                if(u) { u.pendingSignal = true; u.signalDate = Date.now(); }
+                saveDB();
+            }
+        };
+
+        /* ================= 2. CONTROLADORES GLOBALES ================= */
+        function notify(msg, isAlert=false) {
+            const d = document.createElement('div');
+            d.className = 'toast-msg';
+            const icon = isAlert ? 'notifications_active' : 'check_circle';
+            const col = isAlert ? 'var(--gold)' : 'var(--green-neon)';
+            d.innerHTML = `<span class="material-symbols-rounded" style="color:${col}">${icon}</span> <span>${msg}</span>`;
+            document.getElementById('toasts').appendChild(d);
+            try { if(navigator.vibrate) navigator.vibrate(isAlert ? [50, 50, 50] : 30); } catch(e){}
+            setTimeout(() => { 
+                d.style.opacity = '0'; d.style.transform = 'translateY(-20px)'; d.style.transition = '0.3s';
+                setTimeout(() => d.remove(), 300); 
+            }, 4000);
+        }
+
+        function addPoints(pts, reason) {
+                const u = getActiveUser();
+                if(u) u.pts += pts;
+            let currentLevel = 1;
+            for(let i=0; i<LEVELS_REQ.length; i++) {
+                if(u.pts >= LEVELS_REQ[i]) currentLevel = i + 1;
+            }
+            if(currentLevel > u.level) {
+                u.level = currentLevel;
+                notify(`✨ ¡SUBIDA DE NIVEL! Eres Nivel ${currentLevel}`);
+            } else {
+                notify(`+${pts} pts: ${reason}`);
+            }
+            saveDB();
+            const elm = document.getElementById('uLv');
+            if(elm) elm.innerText = u.level;
+            if(currentView === 'home' || currentView === 'roadmap') go(currentView);
+        }
+
+        function toggleUI(show) {
+            const head = document.getElementById('main-header');
+            const nav = document.getElementById('main-nav');
+            const fab = document.getElementById('main-fab');
+            if(show) {
+                head.classList.remove('hidden'); nav.classList.remove('hidden'); fab.classList.remove('hidden');
+            } else {
+                head.classList.add('hidden'); nav.classList.add('hidden'); fab.classList.add('hidden');
+            }
+        }
+
+        // --- SISTEMAS DE NOTIFICACIONES SIMULADAS ---
+        const DAILY_CHECKS = [
+            "En mi equipo se respetan escrupulosamente los procedimientos formales.",
+            "Si detecto una anomalía o problema, tengo la confianza de pararlo todo y reportarlo.",
+            "El liderazgo en mi turno fomenta una comunicación abierta sin miedo a represalias.",
+            "La carga de trabajo permite aplicar prácticas de trabajo seguro (TMEH).",
+            "Recibo un feedback constructivo sobre los comportamientos que puedo mejorar.",
+            "Mis sugerencias son escuchadas cuando identifico un peligro no evidente.",
+            "Tengo claras las expectativas de seguridad ANTES de comenzar cualquier actividad de riesgo."
+        ];
+
+        function checkDailyCulture() {
+            const u = getActiveUser();
+            const todayStr = new Date().toLocaleDateString();
+            if(u && u.lastCultureTrack !== todayStr) {
+                // Selecciona rotando por día
+                const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+                const questionToAsk = DAILY_CHECKS[dayOfYear % DAILY_CHECKS.length];
+                const m = document.createElement('div'); m.id="cultureModal"; m.className = 'modal-overlay';
+                m.innerHTML = `
+                    <div class="modal-box">
+                        <span class="material-symbols-rounded text-gold mb-2" style="font-size:48px">waving_hand</span>
+                        <h2 class="font-heading mb-2">Check Diario</h2>
+                        <p class="text-muted text-sm mb-4">"${questionToAsk}"</p>
+                        <div class="likert">
+                            <button class="likert-btn" onclick="submitLikert(1, this)">1</button>
+                            <button class="likert-btn" onclick="submitLikert(2, this)">2</button>
+                            <button class="likert-btn" onclick="submitLikert(3, this)">3</button>
+                            <button class="likert-btn" onclick="submitLikert(4, this)">4</button>
+                            <button class="likert-btn" onclick="submitLikert(5, this)">5</button>
+                        </div>
+                        <div style="font-size:0.75rem; color:#94a3b8; display:flex; justify-content:space-between">
+                            <span>Total Desacuerdo</span><span>Total Acuerdo</span>
+                        </div>
+                        <button id="btnDailySubmit" class="btn-action mt-4" onclick="doSubmitDailyCulture()">GUARDAR (+5 pts)</button>
+                    </div>
+                `;
+                document.body.appendChild(m);
+            }
+        }
+        
+        function checkPushNotifications() {
+            const u = getActiveUser();
+            if(u && u.pendingSignal) {
+                const elapsed = Date.now() - u.signalDate;
+                if(elapsed > 10000) { 
+                    setTimeout(() => {
+                        u.pendingSignal = false;
+                        // Actualizar en tabla reports si hiciera falta
+                        const rep = db.reports.find(r => r.reporterId === u.id && r.status === 'Pendiente');
+                        if(rep) rep.status = 'Resuelta';
+                        saveDB();
+                        addPoints(50, "Cazador: Señal completada por ingeniería.");
+                        notify("🔔 Mantenimiento resolvió tu anomalía. ¡Buen reporte!", true);
+                    }, 2000);
+                }
+            }
+        }
+
+        let tempLikert = 3;
+        window.submitLikert = function(val, btn) {
+            tempLikert = val;
+            const btns = btn.parentElement.querySelectorAll('.likert-btn');
+            btns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+        window.doSubmitDailyCulture = async function() {
+            const u = getActiveUser();
+            if(!u) return;
+            
+            const btn = document.getElementById('btnDailySubmit');
+            btn.innerText = "Sincronizando..."; btn.style.opacity = '0.5';
+            
+            // Usar API Nube simulada
+            await api.submitDailyCheck(u.id, 'culture_likert', tempLikert);
+            
+            document.getElementById('cultureModal').remove();
+            addPoints(5, "Tracking de Cultura completado");
+        }
+
+        /* ================= 3. VISTAS (SCREENS V-DOM) ================= */
+        let currentView = 'cover';
+
+        const screens = {
+            cover: () => `
+                <div class="passport-cover" onclick="openPassport()">
+                    <div style="text-align:center; padding: 20px;">
+                        <img src="logo-garona.png" class="garona-logo-img" style="border-radius: 50%; border: 3px solid var(--gold); background: white; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" alt="Logo Garoña" onerror="this.src='https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?auto=format&fit=crop&q=80&w=200'">
+                        
+                        <h1 class="gold-foil" style="font-size:2rem; line-height:1.2; letter-spacing:1px; margin-bottom:10px;">PASAPORTE<br>DE SEGURIDAD</h1>
+                        <div class="gold-foil" style="font-family:'Inter'; text-transform:uppercase; letter-spacing:4px; font-weight:700; font-size:0.9rem">ENRESA • GAROÑA</div>
+                    </div>
+                </div>
+            `,
+
+            register: () => `
+                <div class="page-bg">
+                    <h2 class="font-heading center-text mb-4" style="color:var(--green-brand); font-size:2rem;">Expedición Oficial</h2>
+                    <p class="center-text text-muted mb-4">Crea tu cuenta local (Cloud Ready) de seguridad corporativa.</p>
+                    
+                    <div class="glass-card" style="width:100%; max-width:400px; padding:30px 20px;">
+                        <div class="avatar-upload" id="upAvatar" onclick="document.getElementById('avInput').click()">
+                            <span class="material-symbols-rounded text-muted" style="font-size:40px;">add_a_photo</span>
+                            <img id="impreview" style="display:none;" />
+                            <input type="file" id="avInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+                        </div>
+                        <input type="text" id="regName" class="input-field" placeholder="Nombre completo" required>
+                        <input type="email" id="regEmail" class="input-field mt-3" placeholder="Correo Electrónico (Para Nube)" required>
+                        <input type="password" id="regPwd" class="input-field mt-3" placeholder="Contraseña (Mín. 6 caracteres)" required>
+                        
+                        <select id="regCompany" class="input-field mt-3">
+                            ${[
+                                "Ambulancias Rodrigo", "Applus", "Ars Factum", "DMIMM", "DRACE", 
+                                "Empresarios Agrupados", "Enresa", "Eulen", "G&M", "Helgeson", 
+                                "IDOM", "Igneo", "ITM", "Marsein", "Medidas Ambientales", 
+                                "Monlain", "Nuclenor", "Proinsa", "Quirón", "Serveo", "Westinghouse"
+                            ].map(c => '<option value="' + c + '">' + c + '</option>').join('')}
+                        </select>
+                        <button id="btnReg" class="btn-action mt-4" onclick="doRegisterCloud()">
+                            CREAR Y EMITIR <span class="material-symbols-rounded">fingerprint</span>
+                        </button>
+                    </div>
+                </div>
+            `,
+
+            home: () => {
+                const u = getActiveUser();
+                if(!u) return '';
+                const nextLvlReq = u.level < 5 ? LEVELS_REQ[u.level] : LEVELS_REQ[4];
+                const pct = u.level < 5 ? (u.pts / nextLvlReq)*100 : 100;
+                return `
+                <div class="page-bg main-padding">
+                    <div class="id-card mb-4" style="margin-top:20px;">
+                        <img src="${u.avatar || 'https://via.placeholder.com/100'}" class="id-photo">
+                        <div class="id-data" style="position:relative; width:100%;">
+                            <button onclick="editProfile()" style="position:absolute; right:0; top:0; background:transparent; border:none; color:var(--text-main); padding:5px;"><span class="material-symbols-rounded">edit</span></button>
+                            <div class="id-label">Nombre</div>
+                            <div class="id-val">${u.name}</div>
+                            <div class="id-label">Empresa</div>
+                            <div class="id-val">${u.company}</div>
+                            <div class="id-label">Nivel Actual</div>
+                            <div class="id-val" style="color:var(--green-brand)">
+                                <span class="material-symbols-rounded" style="vertical-align:-4px; font-size:18px;">${LEVELS_ICONS[u.level-1]}</span>
+                                ${LEVELS_NAMES[u.level-1]}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOTÓN GIGANTE PARA IR A LOS SELLOS -->
+                    <button class="btn-action mb-4" onclick="go('stamps')" style="background: white; color: var(--text-main); border: 2px solid var(--green-brand); padding: 12px; border-radius:12px;">
+                        <span class="material-symbols-rounded text-green">qr_code_scanner</span> VER CERTIFICACIONES
+                    </button>
+
+                    <div class="glass-card">
+                        <h3 class="font-heading mb-2 text-muted">Progreso de Puntos</h3>
+                        <div class="flex justify-between" style="align-items:baseline">
+                            <span style="font-size:2.5rem; font-family:'Outfit'; font-weight:800; color:var(--green-brand)">${u.pts}</span>
+                            <span class="text-sm font-heading">Meta: ${nextLvlReq}</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <h3 class="font-heading mb-2" style="color:var(--text-main)">Entrenamiento E+C</h3>
+                        <p class="text-sm text-muted mb-4">Desarrolla comportamientos seguros mediante la reflexión de Herramientas E+C=CS (C).</p>
+                        <button class="btn-action btn-gold" onclick="go('ec_tool')" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color:white;">
+                            <span class="material-symbols-rounded">psychology_alt</span> REALIZAR REFLEXIÓN
+                        </button>
+                    </div>
+                </div>
+            `},
+
+            roadmap: () => {
+                const u = getActiveUser();
+                let nodesHTML = '';
+                for(let i=0; i<LEVELS_NAMES.length; i++) {
+                    const active = u && (i+1) <= u.level;
+                    const future = u && (i+1) > u.level;
+                    const icon = LEVELS_ICONS[i];
+                    nodesHTML += `
+                        <div class="node ${active?'active':''} ${future?'future':''}">
+                            <div class="node-icon"><span class="material-symbols-rounded">${icon}</span></div>
+                            <div>
+                                <h3 class="font-heading" style="font-size:1.1rem; color:${active?'var(--green-brand)':'var(--text-muted)'}">Nivel ${i+1}: ${LEVELS_NAMES[i]}</h3>
+                                <div class="text-sm text-muted">${LEVELS_REQ[i]} pts req.</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                const fillPct = (u ? u.level / 5 : 0) * 100;
+                
+                return `
+                <div class="page-bg main-padding">
+                    <h2 class="font-heading center-text mb-4" style="font-size:1.8rem">El Camino del Profesional</h2>
+                    <p class="center-text text-muted mb-4 text-sm">Tu progreso hacia el máximo reconocimiento de Cultura de Seguridad en Garoña.</p>
+                    
+                    <div class="glass-card roadmap-container" style="padding-left:10px;">
+                        <div class="roadmap-line"></div>
+                        <div class="roadmap-fill" style="height:calc(${fillPct}% - 40px);"></div>
+                        ${nodesHTML}
+                    </div>
+                </div>
+            `},
+
+            stamps: () => {
+                const u = getActiveUser();
+                let stampsHTML = '';
+                for(let key in TRAININGS) {
+                    const t = TRAININGS[key];
+                    if(u && u.stamps[key]) {
+                        const rot = Math.floor(Math.random() * 40) - 20;
+                        stampsHTML += `<div class="stamp-box" style="background:rgba(0,122,51,0.05); border-color:var(--green-brand); flex-direction:column; gap:5px;">
+                            <span class="material-symbols-rounded" style="color:${t.color}; font-size:40px; transform:rotate(${rot}deg); animation: stampPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); --rot:${rot}deg;">${t.icon}</span>
+                            <div style="font-size:0.65rem; text-align:center; font-weight:700; color:var(--text-main); padding: 0 5px; line-height:1.2;">${t.name}</div>
+                        </div>`;
+                    } else {
+                        stampsHTML += `<div class="stamp-box" style="flex-direction:column; gap:5px; background:rgba(0,0,0,0.02); border: 2px dashed rgba(0,0,0,0.08);">
+                            <span class="material-symbols-rounded text-muted" style="opacity:0.2; font-size:40px;">${t.icon}</span>
+                            <div style="font-size:0.6rem; text-align:center; opacity:0.4; padding: 0 5px; line-height:1.2;">Pendiente</div>
+                        </div>`;
+                    }
+                }
+                return `
+                <div class="page-bg main-padding">
+                    <div class="flex items-center mb-4 text-muted" style="gap:8px; cursor:pointer;" onclick="go('home')">
+                        <span class="material-symbols-rounded">arrow_back</span>
+                        <span class="font-heading">Volver</span>
+                    </div>
+
+                    <h2 class="font-heading center-text mb-4" style="font-size:1.8rem">Certificaciones</h2>
+                    <p class="center-text text-muted mb-4 text-sm">Escanea QRs de formaciones e hitos para coleccionar sellos oficiales de aptitud.</p>
+                    
+                    <!-- BOTÓN ESCANER QR INTERNO AHORA -->
+                    <button class="btn-action mb-4" onclick="openScanner()">
+                        <span class="material-symbols-rounded">qr_code_scanner</span> ESCANEAR NUEVO SELLO
+                    </button>
+
+                    <div class="glass-card" style="background:var(--passport-paper); box-shadow:inset 0 0 20px rgba(0,0,0,0.05);">
+                        <div class="stamp-grid">
+                            ${stampsHTML}
+                        </div>
+                    </div>
+                </div>
+            `},
+
+            // --- NUEVO MÓDULO: CAZADORES DE SEÑALES ---
+            cazadores: () => `
+                <div class="page-bg main-padding">
+                    <div class="flex items-center mb-4 text-muted" style="gap:8px; cursor:pointer;" onclick="go('home')">
+                        <span class="material-symbols-rounded">close</span>
+                        <span class="font-heading">Cancelar</span>
+                    </div>
+
+                    <h2 class="font-heading center-text mb-2" style="font-size:1.8rem; color:var(--red);">Cazadores de Señales</h2>
+                    <p class="center-text text-muted mb-4 text-sm">Reporte ultra-ágil en 3 pasos cortos para notificar anomalías (Integración SIM).</p>
+                    
+                    <div class="glass-card center-text">
+                        <h3 class="font-heading text-main mb-4" style="font-size:1.1rem">Paso 1: Foto Evidencia (Opcional)</h3>
+                        <div class="avatar-upload" style="border-radius:12px; width:100%; height:120px; border-color:var(--red); color:var(--red); overflow:hidden;" onclick="document.getElementById('cazCamera').click()">
+                            <span class="material-symbols-rounded" style="font-size:40px;" id="cazIcon">add_a_photo</span>
+                            <img id="cazImgPreview" style="display:none; width:100%; height:100%; object-fit:cover;">
+                            <input type="file" accept="image/*" capture="environment" id="cazCamera" style="display:none" onchange="window.previewCazador(event)">
+                        </div>
+
+                        <h3 class="font-heading text-main mb-2 mt-4" style="font-size:1.1rem">Paso 2: ¿Qué sucede?</h3>
+                        <textarea id="cazTxt" class="input-field" placeholder="Ej: Fuga de agua en válvula 4b, o graba una nota de voz..." style="min-height:90px;"></textarea>
+
+                        <button id="btnCaz" class="btn-action mt-4" style="background: var(--red); box-shadow: 0 8px 16px rgba(255, 71, 87, 0.3);" onclick="doSendCazador()">
+                            <span class="material-symbols-rounded">send</span> PASO 3: TRANSMITIR
+                        </button>
+                    </div>
+                </div>
+            `,
+
+            kudos: () => {
+                const u = getActiveUser();
+                if(!u) return '';
+                const optR = EXPECTATIONS.map(e => `<option value="${e}">${e}</option>`).join('');
+                
+                // Relational Queries
+                const receivedList = db.kudos.filter(k => k.receiverId === u.id);
+                const sentList     = db.kudos.filter(k => k.senderId === u.id);
+                const getUsr = (id) => db.users.find(x => x.id === id) || {name:'Sistema', avatar:'https://via.placeholder.com/100'};
+
+                const rHtml = receivedList.length ? receivedList.map(k => {
+                    const sender = getUsr(k.senderId);
+                    return `<div class="k-feed-card">
+                        <img src="${sender.avatar}" class="k-feed-avatar">
+                        <div style="flex:1">
+                            <div style="font-weight:700; font-size:0.95rem; font-family:'Outfit'; margin-bottom:2px;">De: ${sender.name} <span style="font-weight:400; font-size:0.75rem; color:var(--text-muted); float:right;">${k.date}</span></div>
+                            <div style="font-size:0.8rem; color:var(--green-brand); font-weight:600; margin-bottom:4px;">${k.reason}</div>
+                            <div style="font-size:0.85rem; color:var(--text-muted); font-style:italic;">"${k.msg || 'Gran trabajo en equipo.'}"</div>
+                        </div>
+                    </div>`; }).join('') : '<div class="center-text text-muted" style="padding:20px;">Aún no has recibido Kudos.</div>';
+
+                const sHtml = sentList.length ? sentList.map(k => {
+                    const receiver = getUsr(k.receiverId);
+                    return `<div class="k-feed-card">
+                        <img src="${u.avatar}" class="k-feed-avatar">
+                        <div style="flex:1">
+                            <div style="font-weight:700; font-size:0.95rem; font-family:'Outfit'; margin-bottom:2px;">Para: ${receiver.name} <span style="font-weight:400; font-size:0.75rem; color:var(--text-muted); float:right;">${k.date}</span></div>
+                            <div style="font-size:0.8rem; color:var(--green-brand); font-weight:600; margin-bottom:4px;">${k.reason}</div>
+                            <div style="font-size:0.85rem; color:var(--text-muted); font-style:italic;">"${k.msg}"</div>
+                        </div>
+                    </div>`; }).join('') : '<div class="center-text text-muted" style="padding:20px;">Aún no has enviado Kudos.</div>';
+
+                return `
+                <div class="page-bg main-padding" onclick="closeAc(event)">
+                    <h2 class="font-heading center-text mb-4" style="font-size:1.8rem">Kudos de Seguridad</h2>
+                    
+                    <div class="kudos-tabs">
+                        <button class="k-tab active" id="kt-send" onclick="switchKTab('send')">Enviar</button>
+                        <button class="k-tab" id="kt-received" onclick="switchKTab('received')">Recibidos</button>
+                        <button class="k-tab" id="kt-sent" onclick="switchKTab('sent')">Enviados</button>
+                    </div>
+
+                    <div id="kc-send" class="glass-card k-content" style="overflow:visible;">
+                        <label class="font-heading text-sm text-muted">A quién reconoces:</label>
+                        <input type="text" id="kuSearch" class="input-field mt-4" placeholder="Buscar compañero..." onkeyup="searchAC()" autocomplete="off">
+                        <input type="hidden" id="kuTargetId">
+                        <div id="acList" class="autocomplete-list" style="display:none; position:absolute; z-index:100; width:calc(100% - 40px); left: 20px;"></div>
+                        
+                        <label class="font-heading text-sm text-muted mt-4 flex">Expectativa Cumplida:</label>
+                        <select id="kuReason" class="input-field mt-4 mb-4">
+                            <option disabled selected>Seleccionar...</option>
+                            ${optR}
+                        </select>
+
+                        <label class="font-heading text-sm text-muted">Mensaje (Opcional):</label>
+                        <textarea id="kuMsg" class="input-field mt-4 mb-4" placeholder="Gran trabajo deteniendo la maniobra..."></textarea>
+
+                        <button id="btnKuSend" class="btn-action btn-gold" onclick="doSendKudo()" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color:white;">
+                            <span class="material-symbols-rounded">stars</span> ENVIAR KUDOS
+                        </button>
+                    </div>
+
+                    <div id="kc-received" class="glass-card k-content" style="display:none; padding:0;">
+                        ${rHtml}
+                    </div>
+
+                    <div id="kc-sent" class="glass-card k-content" style="display:none; padding:0;">
+                        ${sHtml}
+                    </div>
+                </div>
+            `},
+
+            fatigue: () => {
+                const q = (title, id, emojis) => `
+                    <div class="fho-question">
+                        <h4 class="font-heading text-main" style="font-size:1.1rem">${title}</h4>
+                        <div class="emoji-flex" id="fho_${id}">
+                            <span class="emoji-item" onclick="selFho('${id}', 1, this)">${emojis[0]}</span>
+                            <span class="emoji-item" onclick="selFho('${id}', 2, this)">${emojis[1]}</span>
+                            <span class="emoji-item" onclick="selFho('${id}', 3, this)">${emojis[2]}</span>
+                        </div>
+                    </div>
+                `;
+                return `
+                <div class="page-bg main-padding">
+                    <h2 class="font-heading center-text mb-4" style="font-size:1.8rem">Termómetro FHO</h2>
+                    <p class="center-text text-muted mb-4 text-sm">Monitoreo de precursores. ¿Cómo han sido las condiciones de tu turno hoy?</p>
+                    <div class="glass-card">
+                        ${q("¿Exigencia Física?", "fis", ["🥵", "😐", "💪"])}
+                        ${q("¿Exigencia Mental / Complejidad?", "men", ["🤯", "🤔", "🧠"])}
+                        ${q("¿Sufriste interrupciones graves?", "int", ["🤬", "🙄", "😌"])}
+                        ${q("¿Presión de tiempo excesiva?", "pre", ["⏱️", "⏳", "✅"])}
+                        ${q("¿Tuviste Apoyo del Equipo?", "apo", ["🚶‍♂️", "🤝", "🫂"])}
+                        
+                        <button id="btnFat" class="btn-action mt-4" onclick="doSubmitFatigue()">
+                            <span class="material-symbols-rounded">send</span> REGISTRAR DATOS
+                        </button>
+                    </div>
+                </div>
+            `},
+
+            ec_tool: () => {
+                const img = EC_IMAGES[Math.floor(Math.random() * EC_IMAGES.length)];
+                
+                const EC_RAW_LIST = [
+                    "Presta atención a las recomendaciones y a los puntos de atención. Sigue las instrucciones de PRL y PR.",
+                    "Identifica y comunica cualquier tipo de deficiencia, anomalía, problema organizativo o comportamiento inadecuado.",
+                    "Corrige los comportamientos que vayan en contra de la seguridad.",
+                    "Actúa como modelo de conducta en relación a la Seguridad.",
+                    "Comprueba, antes de iniciar cualquier actividad, si dispones de los procedimientos adecuados.",
+                    "Estudia cuidadosamente los procedimientos que tengas que aplicar y si dudas, pregunta.",
+                    "Pon en práctica lo indicado en los procedimientos y sigue los pasos establecidos.",
+                    "Identifica posibles incidencias que encuentres y comunícalas para su corrección.",
+                    "Prepara y lleva contigo todos los materiales y herramientas que necesites.",
+                    "Aprovecha las reuniones preparatorias o de cierre para comentar buenas prácticas.",
+                    "Coordina el trabajo a realizar con todos aquellos que estén involucrados.",
+                    "Piensa desde el punto de vista de los demás, no solo en el tuyo.",
+                    "Demuestra tu disposición para ayudar a los compañeros cuando te pidan ayuda.",
+                    "Trabaja en equipo: 1+1=3.",
+                    "Piensa en el beneficio común, no sólo en el tuyo propio.",
+                    "Estimula la comunicación y coordina tu trabajo.",
+                    "Si cooperas con tus compañeros, aprenderás con ellos.",
+                    "Respeta y fomenta el diálogo con tus compañeros.",
+                    "Fomenta el reconocimiento cuando se alcanzan los objetivos. Celébralo.",
+                    "Antes de emitir cualquier tipo de crítica, piensa en todas las implicaciones.",
+                    "Comunica tus pensamientos con respeto y aprecio.",
+                    "Valora a los demás, reconociendo sus virtudes y su esfuerzo.",
+                    "Procura siempre ser parte de la solución.",
+                    "Focalízate en las causas de un error y no en la persona que lo ha cometido.",
+                    "Practica la autocrítica de forma constante e intencionada.",
+                    "Mantén reuniones preparatorias para asegurar que las cuestiones clave son comprendidas.",
+                    "Resuelve los conflictos de manera personal, mejor cara a cara.",
+                    "Escucha a todas las partes implicadas en el conflicto activo.",
+                    "Ofrece tu ayuda real y tangible para solucionar un problema.",
+                    "La verdad absoluta no existe. No te creas en posesión de la verdad absoluta.",
+                    "Reconoce el trabajo bien hecho de manera habitual y sincera.",
+                    "Analiza las causas de los errores para corregir y mejorar los procesos técnicos.",
+                    "Aprende de tus compañeros y deja a un lado la competitividad tóxica.",
+                    "Prioriza la seguridad por delante de la cantidad de trabajo o los plazos de entrega.",
+                    "No hagas 'experimentos' durante el desarrollo de tus trabajos."
+                ];
+                
+                const behavior = EC_RAW_LIST[Math.floor(Math.random() * EC_RAW_LIST.length)];
+                
+                // Shuffle options
+                const options = [
+                    { t: 'Aplicarlo de manera consciente, priorizando siempre la Cultura de Seguridad y notificando si es imposible cumplirlo.', v: true },
+                    { t: 'Hacerlo únicamente si tengo tiempo de sobra y no afecta negativamente al cronograma de la parada.', v: false },
+                    { t: 'Ignorarlo, ya que la responsabilidad final sobre este comportamiento recae exclusivamente en mi supervisor de turno.', v: false }
+                ].sort(() => Math.random() - 0.5);
+
+                const getOptHtml = (opt, index) => {
+                    const letter = ['A','B','C'][index];
+                    return `<button class="quiz-option" onclick="evalEc(${opt.v}, this)">${letter} - ${opt.t}</button>`;
+                };
+
+                return `
+                <div class="page-bg main-padding" style="display:flex; flex-direction:column; justify-content:center;">
+                    <div class="flex items-center mb-4 text-muted" style="gap:8px; cursor:pointer;" onclick="go('home')">
+                        <span class="material-symbols-rounded">arrow_back</span>
+                        <span class="font-heading">Volver</span>
+                    </div>
+
+                    <!-- FICHA FÍSICA MOCK -->
+                    <div class="ec-frame" id="ecCard">
+                        <div class="ec-header">
+                            <span class="ec-badge">E+C=CS (C)</span>
+                            <span class="ec-title">ENRESA</span>
+                        </div>
+                        
+                        <h3 class="font-heading text-main mb-2" style="font-size:1.3rem;">PREVENCIÓN EN CAMPO</h3>
+                        
+                        <img src="${img}" class="ec-photo" style="object-fit:cover;">
+                        
+                        <p class="text-muted mb-4" style="font-size:0.95rem; line-height:1.4;">
+                            <b>Reflexión del Comportamiento:</b><br><br>
+                            <span style="color:var(--text-main); font-weight:bold; font-size:1rem;">"${behavior}"</span><br><br>
+                            ¿Cuál es la actitud correcta esperada en planta para cumplir este rasgo?
+                        </p>
+
+                        ${options.map((o, i) => getOptHtml(o, i)).join('')}
+                    </div>
+                </div>
+            `}
+        };
+
+        /* ================= 4. RUTADOR PRINCIPAL ================= */
+        window.go = function(id) {
+            currentView = id;
+            
+            ['home', 'roadmap', 'kudos', 'fatigue'].forEach(tab => {
+                const el = document.getElementById('tab-' + tab);
+                if(el) {
+                    if(tab === id) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+
+            if(id === 'cover' || id === 'register') toggleUI(false);
+            else toggleUI(true);
+
+            // Hide FAB only in specific full screen forms
+            if(id === 'cazadores') document.getElementById('main-fab').classList.add('hidden');
+            else if(id !== 'cover' && id !== 'register') document.getElementById('main-fab').classList.remove('hidden');
+
+            const app = document.getElementById('app');
+            app.style.opacity = 0;
+            app.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                app.innerHTML = screens[id]();
+                app.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                app.style.opacity = 1;
+                app.style.transform = 'translateY(0)';
+                app.scrollTop = 0;
+                
+                if(id === 'home' && getActiveUser()) {
+                    checkDailyCulture();
+                    checkPushNotifications(); // Mock push check
+                }
+            }, 100);
+        };
+
+        /* ================= 5. LÓGICA DE MÓDULOS ================= */
+        
+        // --- Registro ---
+        let mockAvatarBase64 = null;
+        window.handleAvatarUpload = function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                mockAvatarBase64 = evt.target.result;
+                document.getElementById('impreview').src = mockAvatarBase64;
+                document.getElementById('impreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        };
+        window.doRegisterCloud = async function() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const pwd = document.getElementById('regPwd').value;
+            const comp = document.getElementById('regCompany').value;
+            
+            if(!name || !email || !pwd) { notify('Rellena todos los campos obligatorios.', true); return; }
+            
+            const btn = document.getElementById('btnReg');
+            btn.innerHTML = `<span class="material-symbols-rounded">sync</span> Validando Cloud...`;
+            btn.style.opacity = '0.7';
+
+            // Llamada asíncrona simulando Google Firebase Auth
+            await api.registerUser(name, email, pwd, comp, mockAvatarBase64);
+            
+            go('home');
+        };
+
+        // --- Edición de Perfil ---
+        window.editProfile = function() {
+            go('register');
+            setTimeout(() => {
+                const u = getActiveUser();
+                if(!u) return;
+                document.getElementById('regName').value = u.name;
+                document.getElementById('regCompany').value = u.company;
+                document.getElementById('regEmail').value = u.name.split(' ')[0].toLowerCase() + "@enresa.es";
+                if(u.avatar) {
+                    document.getElementById('impreview').src = u.avatar;
+                    document.getElementById('impreview').style.display = 'block';
+                }
+                const btn = document.getElementById('btnReg');
+                btn.innerHTML = `<span class="material-symbols-rounded">save</span> GUARDAR CAMBIOS`;
+                btn.onclick = window.doUpdateProfile;
+                document.querySelector('.font-heading.center-text').innerText = "Ajustes de Perfil";
+            }, 150);
+        };
+        
+        window.doUpdateProfile = function() {
+            const u = getActiveUser();
+            const name = document.getElementById('regName').value;
+            const comp = document.getElementById('regCompany').value;
+            if(!name) { notify('Rellena el nombre', true); return; }
+            u.name = name;
+            u.company = comp;
+            if(mockAvatarBase64) u.avatar = mockAvatarBase64;
+            saveDB();
+            notify('Perfil actualizado con éxito');
+            go('home');
+        };
+
+        // --- Cover Animation ---
+        window.openPassport = function() {
+            document.querySelector('.passport-cover').classList.add('open');
+            setTimeout(() => {
+                if(!db.currentUserId) go('register');
+                else go('home');
+            }, 600);
+        };
+
+        // --- CAZADORES LOGIC ---
+        let cazadorImage64 = null;
+        window.previewCazador = function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                cazadorImage64 = evt.target.result;
+                document.getElementById('cazIcon').style.display = 'none';
+                const imgNode = document.getElementById('cazImgPreview');
+                imgNode.src = cazadorImage64;
+                imgNode.style.display = 'block';
+                notify('Evidencia fotográfica adjuntada', false);
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.doSendCazador = async function() {
+            const txt = document.getElementById('cazTxt').value;
+            if(!txt) { notify('Falta añadir información a la incidencia', true); return; }
+            
+            const btn = document.getElementById('btnCaz');
+            btn.innerHTML = `<span class="material-symbols-rounded">sync</span> ENVIANDO A BBDD...`;
+            btn.style.opacity = '0.5';
+
+            // El backend procesará cazadorImage64 e txt, para local usamos API simulada
+            await api.sendQuickReport(txt, cazadorImage64);
+
+            addPoints(5, "Cazador: Anomalía Reportada Exitosamente");
+            cazadorImage64 = null; // reset
+            go('home');
+        };
+
+        // --- Historial / Sellos Scanner ---
+        window.openScanner = function() {
+            const sc = document.createElement('div'); sc.className = 'mock-scanner'; sc.id = 'scanOverlay';
+            sc.innerHTML = `
+                <div class="scanner-frame"><div class="scanner-line"></div></div>
+                <h3 class="font-heading text-green mb-4">¿Identificar QR Externo?</h3>
+                <div style="display:flex; flex-direction:column; gap:10px; width:80%; max-width:300px;">
+                    <button class="btn-action" style="background:var(--gold); padding:12px; font-size:0.9rem;" onclick="processScan('ini')"><span class="material-symbols-rounded">qr_code</span> QR: Formación Inicial</button>
+                    <button class="btn-action" style="background:var(--green-neon); padding:12px; font-size:0.9rem;" onclick="processScan('con')"><span class="material-symbols-rounded">qr_code</span> QR: Formación Continua</button>
+                    <button class="btn-action" style="background:var(--red-neon); padding:12px; font-size:0.9rem;" onclick="processScan('sim')"><span class="material-symbols-rounded">qr_code</span> QR: Entren. Simulador</button>
+                </div>
+                <button class="btn-action mt-4" style="width:80%; max-width:300px; background:var(--text-muted); padding:12px;" onclick="document.getElementById('scanOverlay').remove()">CANCELAR</button>
+            `;
+            document.body.appendChild(sc);
+        };
+
+        window.processScan = function(tId) {
+            document.getElementById('scanOverlay').innerHTML = `
+                <div class="scanner-frame"><div class="scanner-line"></div></div>
+                <h3 class="font-heading text-green mb-4">Procesando y validando...</h3>
+            `;
+            setTimeout(() => {
+                const overlay = document.getElementById('scanOverlay');
+                if(overlay) overlay.remove();
+                
+                const u = getActiveUser();
+                if(!u) return;
+
+                if(u.stamps[tId]) {
+                    notify("Ya tienes esta certificación validada.", true);
+                } else {
+                    u.stamps[tId] = true;
+                    saveDB();
+                    const tr = TRAININGS[tId];
+                    addPoints(tr.pts, "Certificado: " + tr.name);
+                    go('stamps');
+                }
+            }, 1500);
+        };
+
+        // --- Kudos Predictivo y Multitab ---
+        window.switchKTab = function(tabId) {
+            ['send', 'received', 'sent'].forEach(t => {
+                const btn = document.getElementById('kt-'+t);
+                const block = document.getElementById('kc-'+t);
+                if(btn) btn.classList.remove('active');
+                if(block) block.style.display = 'none';
+            });
+            document.getElementById('kt-'+tabId).classList.add('active');
+            document.getElementById('kc-'+tabId).style.display = 'block';
+        };
+
+        window.searchAC = function() {
+            const val = document.getElementById('kuSearch').value.toLowerCase();
+            const list = document.getElementById('acList');
+            if(val.length < 1) { list.style.display = 'none'; return; }
+            const matches = db.users.filter(e => e.id !== db.currentUserId && (e.name.toLowerCase().includes(val) || e.company.toLowerCase().includes(val)));
+            if(matches.length > 0) {
+                list.innerHTML = matches.map(m => `
+                <div class="ac-item" style="display:flex; align-items:center; gap:10px;" onclick="setKuUser('${m.id}', '${m.name}')">
+                    <img src="${m.avatar}" style="width:30px; height:30px; border-radius:15px; object-fit:cover;">
+                    <div>
+                        <div style="font-family:'Outfit'; font-weight:600; font-size:0.9rem;">${m.name}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">${m.company}</div>
+                    </div>
+                </div>`).join('');
+                list.style.display = 'block';
+            } else {
+                list.style.display = 'none';
+            }
+        };
+        window.setKuUser = function(id, name) {
+            document.getElementById('kuSearch').value = name;
+            document.getElementById('kuTargetId').value = id;
+            document.getElementById('acList').style.display = 'none';
+        }
+        window.closeAc = function(e) {
+            if(e && e.target && e.target.id === 'kuSearch') return;
+            const l = document.getElementById('acList');
+            if(l) l.style.display = 'none';
+        }
+        window.doSendKudo = async function() {
+            const v = document.getElementById('kuSearch').value;
+            const targetId = document.getElementById('kuTargetId').value;
+            const r = document.getElementById('kuReason').value;
+            const m = document.getElementById('kuMsg').value || "Mantenemos los altos estándares por el buen camino.";
+            if(!v || !targetId || !r) { notify("Selecciona un usuario de la lista y una expectativa"); return; }
+            
+            const btn = document.getElementById('btnKuSend');
+            btn.innerHTML = `<span class="material-symbols-rounded">sync</span> GUARDANDO...`;
+            btn.style.opacity = '0.6';
+
+            await api.sendKudo(targetId, r, m);
+            
+            addPoints(20, "Kudos P2P Enviado");
+            document.getElementById('kuTargetId').value = '';
+            document.getElementById('kuSearch').value = '';
+            go('home');
+        };
+
+        // --- Termómetro ---
+        let fatVals = { fis: 2, men: 2, int: 2, pre: 2, apo: 2 };
+        window.selFho = function(id, val, el) {
+            fatVals[id] = val;
+            const parent = el.parentElement;
+            parent.querySelectorAll('.emoji-item').forEach(e => e.classList.remove('active'));
+            el.classList.add('active');
+        };
+        
+        window.doSubmitFatigue = async function() {
+            const u = getActiveUser();
+            if(!u) return;
+
+            const btn = document.getElementById('btnFat');
+            btn.innerHTML = `<span class="material-symbols-rounded">sync</span> GUARDANDO...`;
+            btn.style.opacity = '0.6';
+            
+            await api.submitDailyCheck(u.id, 'fatigue_thermometer', fatVals);
+            addPoints(10, 'Termómetro FHO enviado a nube');
+            go('home');
+        };
+
+        // --- E+C Tool ---
+        window.evalEc = function(isCorrect, btn) {
+            const card = document.getElementById('ecCard');
+            const btns = card.querySelectorAll('.quiz-option');
+            btns.forEach(b => b.onclick = null); // disable
+            
+            if(isCorrect) {
+                btn.classList.add('correct');
+                addPoints(15, "Reflexión E+C correcta");
+                try { if(navigator.vibrate) navigator.vibrate(30); } catch(e){}
+            } else {
+                btn.classList.add('wrong');
+                btns[1].classList.add('correct'); // La B era correcta
+                try { if(navigator.vibrate) navigator.vibrate([20,50,20]); } catch(e){}
+            }
+            setTimeout(()=>go('home'), 2000);
+        };
+
+        /* ================= 6. BOOT ================= */
+        document.addEventListener('DOMContentLoaded', () => {
+            initDB();
+            const u = getActiveUser();
+            const uLvEl = document.getElementById('uLv');
+            if(uLvEl) uLvEl.innerText = u ? u.level : 1;
+            go('cover');
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js');
+            });
+        }
+    </script>
+</body>
+</html>
