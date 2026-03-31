@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
     <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- PREPARACIÓN FIREBASE (CLOUD-READY) -->
     <!-- 
     <script type="module">
@@ -385,98 +386,114 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
             kudos: [],
             reports: [],
             fatigue: [],
-            culture_checks: [] // NUEVO: Historial Real de checks y termómetro para Cloud
+            culture_checks: []
         };
+
+        const supabaseUrl = 'https://pjjqblxzfffkfvurwopo.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqanFibHh6ZmZma2Z2dXJ3b3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDY1NTcsImV4cCI6MjA5MDUyMjU1N30.Xm4QNGKHlPgEX5BQjAh_qd_bPBUlG9b2Zl4hYzjG8so';
+        const suba = supabase.createClient(supabaseUrl, supabaseKey);
 
         function getActiveUser() {
             if(!db.currentUserId) return null;
             return db.users.find(u => u.id === db.currentUserId) || null;
         }
 
-        function initDB() {
-            const saved = localStorage.getItem('enresa_pwd_advanced');
-            if(saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if(parsed.user || (parsed.users && parsed.users.length < EMPLOYEES.length - 10)) { 
-                        // Migración para forzar la actualización del listín IS-12 2026 en dispositivos antiguos
-                        db.currentUserId = parsed.currentUserId || null;
-                        db.users = EMPLOYEES.map((e, idx) => ({ id: 'usr_'+idx, name: e.name, company: e.company, avatar: e.avatar, level:1, pts:0, stamps:{}, lastCultureTrack:'' }));
-                        
-                        // Si existía un usuario activo lo restauramos
-                        if(db.currentUserId && parsed.users) {
-                            const act = parsed.users.find(u => u.id === db.currentUserId);
-                            if(act && !db.users.find(u => u.id === act.id)) db.users.push(act);
-                        }
+        async function initDB() {
+            try {
+                // Recuperar estado de sesión (sólo quién es el usuario local)
+                const saved = localStorage.getItem('pasaporte_uid');
+                if (saved) db.currentUserId = saved;
 
-                        db.kudos = parsed.kudos || [];
-                        db.reports = parsed.reports || [];
-                        db.culture_checks = parsed.culture_checks || [];
-                    } else {
-                        db = parsed;
-                    }
-                } catch(e) {}
-            } else {
-                db.users = EMPLOYEES.map((e, idx) => ({ id: 'usr_'+idx, name: e.name, company: e.company, avatar: e.avatar, level:1, pts:0, stamps:{}, lastCultureTrack:'' }));
-                db.kudos = [
-                    { id: 'k_mock1', senderId: 'usr_2', receiverId: 'usr_test', reason: 'Colaboración y trabajo en equipo', msg: 'Gracias por tu ayuda detectando la válvula incorrecta.', date: new Date().toLocaleDateString() }
-                ];
-                db.reports = [];
-                db.culture_checks = [];
+                // Cargar TODO de la Nube (Producción Serverless)
+                const [ur, rr, kr, cr] = await Promise.all([
+                    suba.from('users').select('*'),
+                    suba.from('reports').select('*'),
+                    suba.from('kudos').select('*'),
+                    suba.from('culture_checks').select('*')
+                ]);
+
+                // Mapeo Cloud a PWA UI
+                db.users = (ur.data || []).map(u => ({ id: u.id, name: u.name, email: u.email, company: u.company, avatar: u.avatar_url, level: u.level, pts: u.points||0, stamps: {}, lastCultureTrack: '' }));
+                db.reports = (rr.data || []).map(r => ({...r, reporterId: r.reporter_id, image: r.image_url, date: new Date(r.created_at).toLocaleDateString() }));
+                db.kudos = (kr.data || []).map(k => ({...k, receiverId: k.receiver_id, senderId: k.sender_id, date: new Date(k.created_at).toLocaleDateString() }));
+                db.culture_checks = (cr.data || []).map(c => ({...c, userId: c.user_id, value: c.value_json, date: new Date(c.created_at).toISOString() }));
+
+            } catch(e) {
+                console.error("Nube Inaccesible", e);
+                alert("Error crítico conectando con el Backend. Comprueba tu conexión a internet.");
             }
         }
+        
         function saveDB() {
-            localStorage.setItem('enresa_pwd_advanced', JSON.stringify(db));
+            // Ya no hace nada, la base relacional maneja el estado. Se mantiene pro compatibilidad de UX temporal.
         }
 
-        /* ================= 1.5 DATA ACCESS LAYER (API FIREBASE MOCK) ================= */
-        // Estas funciones devuelven Promesas para simular la asincronía de la nube real.
+        /* ================= 1.5 DATA ACCESS LAYER (SUPABASE BACKEND REAL) ================= */
         const api = {
-            delay: ms => new Promise(r => setTimeout(r, ms)),
-            
             async registerUser(name, email, pwd, comp, avatarBase) {
-                await this.delay(600); // Simulando auth.createUserWithEmailAndPassword
-                const newId = 'usr_' + Date.now();
-                db.currentUserId = newId;
-                db.users.push({
-                    id: newId, name: name, email: email, company: comp, avatar: avatarBase,
-                    level: 1, pts: 0, stamps: {}, lastCultureTrack: '', pendingSignal: false, signalDate: null
-                });
-                saveDB();
+                // 1. Insertamos en PostgreSQL
+                const { data, error } = await suba.from('users').insert([{
+                    name: name, email: email, company: comp, avatar_url: avatarBase
+                }]).select();
+
+                if(error) throw error;
+                const newUsr = data[0];
+                
+                // 2. Local State Storage Login
+                localStorage.setItem('pasaporte_uid', newUsr.id);
+                db.currentUserId = newUsr.id;
+                
+                // Actualizar array en memoria para UI rápida sin re-fetch
+                db.users.push({ id: newUsr.id, name: newUsr.name, email: newUsr.email, company: newUsr.company, avatar: newUsr.avatar_url, level: newUsr.level, pts: newUsr.points, stamps: {} });
+                
                 return getActiveUser();
             },
             
             async submitDailyCheck(userId, type, valueObj) {
-                await this.delay(300); // Simulando await addDoc(collection(db, 'culture_checks'))
-                db.culture_checks.push({
-                    id: 'chk_' + Date.now(),
-                    userId: userId,
-                    type: type, // 'culture_likert' o 'fatigue_thermometer'
-                    value: valueObj,
-                    date: new Date().toISOString()
-                });
-                
-                const u = db.users.find(x => x.id === userId);
-                if(u && type === 'culture_likert') u.lastCultureTrack = new Date().toLocaleDateString();
-                saveDB();
+                const { error } = await suba.from('culture_checks').insert([{
+                    user_id: userId, type: type, value_json: valueObj
+                }]);
+                if(error) throw error;
             },
             
             async sendKudo(targetId, reason, msg) {
-                await this.delay(500);
-                db.kudos.unshift({
-                    id: 'k_' + Date.now(), senderId: db.currentUserId, receiverId: targetId, reason: reason, msg: msg, date: new Date().toLocaleDateString()
-                });
-                saveDB();
+                const { error } = await suba.from('kudos').insert([{
+                    sender_id: db.currentUserId, receiver_id: targetId, reason: reason, msg: msg
+                }]);
+                if(error) throw error;
             },
             
             async sendQuickReport(txt, image64 = null) {
-                await this.delay(500);
-                db.reports.push({
-                    id: 'r_' + Date.now(), reporterId: db.currentUserId, text: txt, image: image64, status: 'Pendiente', date: new Date().toLocaleDateString()
-                });
-                const u = getActiveUser();
-                if(u) { u.pendingSignal = true; u.signalDate = Date.now(); }
-                saveDB();
+                let publicUrl = null;
+                
+                // Si hay imagen Base64 (Comprimida a 150KB), subir al Storage Bucket
+                if(image64) {
+                    try {
+                        const base64Data = image64.replace(/^data:image\/\w+;base64,/, '');
+                        const binaryStr = atob(base64Data);
+                        const len = binaryStr.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) { bytes[i] = binaryStr.charCodeAt(i); }
+                        const blob = new Blob([bytes], { type: 'image/jpeg' });
+                        
+                        const fileName = Date.now() + '_cazador.jpg';
+                        const { data, error: stError } = await suba.storage.from('evidencias').upload(fileName, blob, { contentType: 'image/jpeg' });
+                        
+                        // Generar y almacenar Link Público para Admin Panel
+                        if(!stError) {
+                            const { data: urlData } = suba.storage.from('evidencias').getPublicUrl(fileName);
+                            publicUrl = urlData.publicUrl;
+                        } else {
+                            console.error("Fallo subiendo foto bucket:", stError);
+                        }
+                    } catch(e) { console.error("Error proceso Blob", e); }
+                }
+
+                // 2. Insertar en Postgres
+                const { error } = await suba.from('reports').insert([{
+                    reporter_id: db.currentUserId, text: txt, image_url: publicUrl, status: 'Pendiente'
+                }]);
+                if(error) throw error;
             }
         };
 
@@ -598,11 +615,15 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
             const btn = document.getElementById('btnDailySubmit');
             btn.innerText = "Sincronizando..."; btn.style.opacity = '0.5';
             
-            // Usar API Nube simulada
-            await api.submitDailyCheck(u.id, 'culture_likert', tempLikert);
-            
-            document.getElementById('cultureModal').remove();
-            addPoints(5, "Tracking de Cultura completado");
+            try {
+                // Usar API Nube simulada
+                await api.submitDailyCheck(u.id, 'culture_likert', tempLikert);
+                
+                document.getElementById('cultureModal').remove();
+                addPoints(5, "Tracking de Cultura completado");
+            } catch (e) {
+                btn.innerText = "GUARDAR (+5 pts)"; btn.style.opacity = '1';
+            }
         }
 
         /* ================= 3. VISTAS (SCREENS V-DOM) ================= */
@@ -612,7 +633,7 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
             cover: () => `
                 <div class="passport-cover" onclick="openPassport()">
                     <div style="text-align:center; padding: 20px;">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Enresa_logo.svg/512px-Enresa_logo.svg.png" class="garona-logo-img" style="border-radius: 50%; border: 3px solid var(--gold); background: white; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); height: 120px; object-fit: contain;" alt="Logo Enresa Garoña">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Enresa_logo.svg/512px-Enresa_logo.svg.png?v=fixed2" class="garona-logo-img" style="border-radius: 50%; border: 3px solid var(--gold); background: white; padding: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); height: 120px; object-fit: contain;" alt="Logo Enresa Garoña">
                         
                         <h1 class="gold-foil" style="font-size:2rem; line-height:1.2; letter-spacing:1px; margin-bottom:10px;">PASAPORTE<br>DE SEGURIDAD</h1>
                         <div class="gold-foil" style="font-family:'Inter'; text-transform:uppercase; letter-spacing:4px; font-weight:700; font-size:0.9rem">ENRESA • GAROÑA</div>
@@ -1104,14 +1125,40 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
         window.previewCazador = function(e) {
             const file = e.target.files[0];
             if(!file) return;
+            
+            // Compresor Automático de Canvas para evitar límites de LocalStorage (5MB)
             const reader = new FileReader();
             reader.onload = function(evt) {
-                cazadorImage64 = evt.target.result;
-                document.getElementById('cazIcon').style.display = 'none';
-                const imgNode = document.getElementById('cazImgPreview');
-                imgNode.src = cazadorImage64;
-                imgNode.style.display = 'block';
-                notify('Evidencia fotográfica adjuntada', false);
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const MAX_WIDTH = 1000;
+                    const MAX_HEIGHT = 1000;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Exportar a JPG bajando calidad al 60%
+                    cazadorImage64 = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    document.getElementById('cazIcon').style.display = 'none';
+                    const imgNode = document.getElementById('cazImgPreview');
+                    imgNode.src = cazadorImage64;
+                    imgNode.style.display = 'block';
+                    notify('Evidencia fotográfica optimizada para red', false);
+                };
+                img.src = evt.target.result;
             };
             reader.readAsDataURL(file);
         };
@@ -1124,12 +1171,16 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
             btn.innerHTML = `<span class="material-symbols-rounded">sync</span> ENVIANDO A BBDD...`;
             btn.style.opacity = '0.5';
 
-            // El backend procesará cazadorImage64 e txt, para local usamos API simulada
-            await api.sendQuickReport(txt, cazadorImage64);
-
-            addPoints(5, "Cazador: Anomalía Reportada Exitosamente");
-            cazadorImage64 = null; // reset
-            go('home');
+            try {
+                await api.sendQuickReport(txt, cazadorImage64);
+                addPoints(5, "Cazador: Anomalía Reportada Exitosamente");
+                cazadorImage64 = null; // reset
+                go('home');
+            } catch(e) {
+                btn.innerHTML = `<span class="material-symbols-rounded">warning</span> ERROR EN ENVÍO`;
+                btn.style.opacity = '1';
+                btn.style.background = 'var(--red-alert)';
+            }
         };
 
         // --- Historial / Sellos Scanner ---
@@ -1272,13 +1323,16 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
             setTimeout(()=>go('home'), 2000);
         };
 
-        /* ================= 6. BOOT ================= */
-        document.addEventListener('DOMContentLoaded', () => {
-            initDB();
+        // Initialize!
+        window.addEventListener('load', async () => {
+            await initDB();
             const u = getActiveUser();
             const uLvEl = document.getElementById('uLv');
             if(uLvEl) uLvEl.innerText = u ? u.level : 1;
             go('cover');
+            
+            // Re-fetch silencioso cada 15 segundos para simular socket pasivo en el móvil
+            setInterval(initDB, 15000);
         });
 
         if ('serviceWorker' in navigator) {
