@@ -436,7 +436,10 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
                     name: name, email: email, company: comp, avatar_url: avatarBase
                 }]).select();
 
-                if(error) throw error;
+                if(error) {
+                    alert("BD Error (Users): " + error.message);
+                    throw error;
+                }
                 const newUsr = data[0];
                 
                 // 2. Local State Storage Login
@@ -493,7 +496,10 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
                 const { error } = await suba.from('reports').insert([{
                     reporter_id: db.currentUserId, text: txt, image_url: publicUrl, status: 'Pendiente'
                 }]);
-                if(error) throw error;
+                if(error) {
+                    alert("BD Error (Reports): " + error.message);
+                    throw error;
+                }
             }
         };
 
