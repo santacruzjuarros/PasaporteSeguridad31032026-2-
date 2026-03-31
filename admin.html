@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,400,0,0" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-dark: #0a0e14;
@@ -315,23 +316,31 @@
     <script>
         document.getElementById('dateHeader').innerText = new Date().toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
+        const supabaseUrl = 'https://pjjqblxzfffkfvurwopo.supabase.co';
+        const supabaseKey = 'sb_publishable_W93uT4tecCL1CuCcj_MYYg_w-95BVHs';
+        const suba = supabase.createClient(supabaseUrl, supabaseKey);
+
         let fatigueChartInstance = null;
         let cultureChartInstance = null;
 
-        // Database Injection
-        function loadAdminData() {
-            const raw = localStorage.getItem('enresa_pwd_advanced');
-            if(!raw) {
-                alert("Base de datos no encontrada o no sincronizada con el dispositivo local.");
-                return;
-            }
-
+        // Fetch Cloud Data
+        async function loadAdminData() {
             try {
-                let db = JSON.parse(raw);
-                db.users = db.users || [];
-                db.reports = db.reports || [];
-                db.kudos = db.kudos || [];
-                db.culture_checks = db.culture_checks || [];
+                // Descarga concurrente desde las tablas maestras PostgreSQL
+                const [ur, rr, kr, cr] = await Promise.all([
+                    suba.from('users').select('*'),
+                    suba.from('reports').select('*'),
+                    suba.from('kudos').select('*'),
+                    suba.from('culture_checks').select('*')
+                ]);
+
+                // Mapear al formato esperado por el frontend v2
+                let db = {
+                    users: (ur.data || []).map(u => ({...u, avatar: u.avatar_url})),
+                    reports: (rr.data || []).map(r => ({...r, reporterId: r.reporter_id, image: r.image_url, date: new Date(r.created_at).toLocaleDateString()})),
+                    kudos: (kr.data || []).map(k => ({...k, receiverId: k.receiver_id, date: new Date(k.created_at).toLocaleDateString()})),
+                    culture_checks: (cr.data || []).map(c => ({...c, value: c.value_json}))
+                };
                 
                 // 1. KPIs
                 document.getElementById('kpi-users').innerText = db.users.filter(u => u.name).length;
@@ -465,20 +474,23 @@
             }
         }
 
-        window.showImg = function(b64, text) {
-            document.getElementById('modalImgSrc').src = b64;
+        window.showImg = function(url, text) {
+            document.getElementById('modalImgSrc').src = url;
             document.getElementById('modalTxt').innerText = "Evidencia: " + text;
             document.getElementById('imgModal').style.display = 'flex';
         };
 
         // Initialize!
-        window.addEventListener('load', loadAdminData);
-
-        // REAL-TIME SYNC: Detectar cambios en el localStorage cuando se usa la PWA en otra pestaña
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'enresa_pwd_advanced') {
-                loadAdminData();
-            }
+        window.addEventListener('load', () => {
+            loadAdminData();
+            
+            // REAL-TIME SYNC: Websockets Mágicos de Supabase
+            suba.channel('admin-channel')
+                .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
+                    console.log('Cambio detectado en la nube!', payload);
+                    loadAdminData(); // Refrescar silenciosamente el dashboard
+                })
+                .subscribe();
         });
 
     </script>
