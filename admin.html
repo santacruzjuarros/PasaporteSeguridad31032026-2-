@@ -44,6 +44,7 @@
             position: fixed;
             height: 100vh;
             z-index: 100;
+            overflow-y: auto;
         }
 
         .brand {
@@ -106,6 +107,11 @@
             font-weight: 700;
         }
 
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.4s ease; }
+        
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
         /* Dashboard Grid */
         .grid-kpi {
             display: grid;
@@ -121,6 +127,7 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
         }
 
         .kpi-title {
@@ -129,7 +136,10 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .kpi-value {
@@ -169,6 +179,10 @@
             color: #d1d8e0;
             vertical-align: middle;
         }
+        
+        .admin-table tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
 
         .status-badge {
             padding: 4px 8px;
@@ -182,31 +196,48 @@
         .status-green { background: rgba(0, 255, 136, 0.1); color: var(--green-neon); border: 1px solid rgba(0,255,136,0.3); }
 
         .btn-view {
-            background: transparent;
-            border: 1px solid var(--glass-border);
-            color: var(--gold);
-            padding: 6px 12px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: var(--green-neon);
+            padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-family: 'Outfit';
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 600;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .btn-view:hover {
-            background: var(--gold);
+            background: var(--green-neon);
             color: black;
         }
 
-        /* Image Modal */
-        #imgModal {
+        /* Image Modal & Kudo Modal */
+        .admin-modal {
             display: none;
             position: fixed; top:0; left:0; width:100%; height:100%;
             background: rgba(0,0,0,0.9);
             z-index: 1000;
             justify-content: center; align-items: center; flex-direction: column;
+            padding: 20px;
         }
-        #imgModal img { max-width: 90%; max-height: 80vh; border-radius: 8px; border: 2px solid var(--gold); }
-        #imgModal .close { color: white; font-size: 2rem; position: absolute; top: 20px; right: 30px; cursor: pointer; }
+        .modal-content {
+            background: var(--bg-panel);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px; width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .admin-modal .close { color: white; font-size: 2rem; position: absolute; top: 15px; right: 20px; cursor: pointer; }
+        
+        .report-img-full { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px; margin-bottom: 20px; border: 2px solid var(--gold); }
+        .thumbnail { width: 60px; height: 60px; border-radius: 4px; object-fit: cover; border: 1px solid var(--glass-border); cursor: pointer; }
 
     </style>
 </head>
@@ -218,99 +249,225 @@
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Enresa_logo.svg/512px-Enresa_logo.svg.png" style="background:white; padding:5px; border-radius:10px; border:2px solid var(--gold); object-fit:contain;" alt="Garoña">
             <h1>PRC Central<br><span style="color:var(--text-muted); font-size:0.7rem;">Dashboard Táctico</span></h1>
         </div>
-        <div class="nav-item active">
-            <span class="material-symbols-rounded">dashboard</span> Overview Global
+        
+        <div class="nav-item active" onclick="switchSection('overview', this)">
+            <span class="material-symbols-rounded">dashboard</span> Visión General
         </div>
-        <div class="nav-item">
-            <span class="material-symbols-rounded">policy</span> Cultura & Fatiga
-        </div>
-        <div class="nav-item">
+        <div class="nav-item" onclick="switchSection('cazadores', this)">
             <span class="material-symbols-rounded">camera_scan</span> Cazadores Señales
+        </div>
+        <div class="nav-item" onclick="switchSection('kudos', this)">
+            <span class="material-symbols-rounded">stars</span> Kudos P2P
+        </div>
+        <div class="nav-item" onclick="switchSection('culture', this)">
+            <span class="material-symbols-rounded">policy</span> Cultura INPO
+        </div>
+        <div class="nav-item" onclick="switchSection('fatigue', this)">
+            <span class="material-symbols-rounded">psychology</span> Termómetro FHO
+        </div>
+        <div class="nav-item" onclick="switchSection('ec', this)">
+            <span class="material-symbols-rounded">school</span> Entrenamiento E+C
         </div>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
         <div class="header-top">
-            <div class="page-title">Métricas de Producción (Tiempo Real)</div>
+            <div class="page-title" id="pageTitleText">Visión General</div>
             <div style="color:var(--text-muted);" id="dateHeader">Cargando fecha...</div>
         </div>
 
-        <!-- KPIs -->
-        <div class="grid-kpi">
-            <div class="card">
-                <div class="kpi-title">Personal Conectado (IS-12)</div>
-                <div class="kpi-value"><span class="material-symbols-rounded" style="color:var(--green-neon);">groups</span> <span id="kpi-users">0</span></div>
+        <!-- SECCIÓN 1: Visión General -->
+        <section id="section-overview" class="page-section active">
+            <div class="grid-kpi">
+                <div class="card">
+                    <div class="kpi-title">Personal Conectado (IS-12)</div>
+                    <div class="kpi-value"><span class="material-symbols-rounded" style="color:var(--green-neon);">groups</span> <span id="kpi-users">0</span></div>
+                </div>
+                <div class="card">
+                    <div class="kpi-title">Alertas Abiertas (Cazadores)</div>
+                    <div class="kpi-value"><span class="material-symbols-rounded" style="color:var(--red-alert);">warning</span> <span id="kpi-reports">0</span></div>
+                </div>
+                <div class="card">
+                    <div class="kpi-title">Kudos Emitidos (Mes)</div>
+                    <div class="kpi-value"><span class="material-symbols-rounded" style="color:var(--gold);">stars</span> <span id="kpi-kudos">0</span></div>
+                </div>
+                <div class="card">
+                    <div class="kpi-title">Checks de Cultura</div>
+                    <div class="kpi-value"><span class="material-symbols-rounded" style="color:#00a8ff;">bar_chart</span> <span id="kpi-checks">0</span></div>
+                </div>
             </div>
-            <div class="card">
-                <div class="kpi-title">Alertas Abiertas (Cazadores)</div>
-                <div class="kpi-value"><span class="material-symbols-rounded" style="color:var(--red-alert);">warning</span> <span id="kpi-reports">0</span></div>
-            </div>
-            <div class="card">
-                <div class="kpi-title">Kudos Emitidos (Mes)</div>
-                <div class="kpi-value"><span class="material-symbols-rounded" style="color:var(--gold);">stars</span> <span id="kpi-kudos">0</span></div>
-            </div>
-            <div class="card">
-                <div class="kpi-title">Checks de Cultura FHO</div>
-                <div class="kpi-value"><span class="material-symbols-rounded" style="color:#00a8ff;">bar_chart</span> <span id="kpi-checks">0</span></div>
-            </div>
-        </div>
-
-        <div class="grid-main">
-            <!-- Charts Section -->
-            <div style="display:flex; flex-direction:column; gap:20px;">
-                <div class="card" style="flex:1;">
-                    <h3 class="kpi-title">Distribución - Termómetro de Fatiga</h3>
-                    <div style="position: relative; height: 250px; width: 100%; display:flex; justify-content:center;">
-                        <canvas id="fatigueChart"></canvas>
+            
+            <div class="grid-main">
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="card" style="flex:1;">
+                        <h3 class="kpi-title">Tendencia de Actividad de Reportes Recientes</h3>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="overviewChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                <!-- Cazadores de Señales Table -->
-                <div class="card" style="flex:2;">
-                    <h3 class="kpi-title">Bandeja de Entrada: Cazadores de Señales</h3>
-                    <div style="overflow-x:auto;">
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="card">
+                        <h3 class="kpi-title">Top Referentes Globales</h3>
+                        <div id="overview-leaderboard" style="display:flex; flex-direction:column; gap:12px; margin-top:15px;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: Cazadores -->
+        <section id="section-cazadores" class="page-section">
+            <button class="btn-view" style="margin-bottom: 20px;" onclick="exportCSV('cazadores')"><span class="material-symbols-rounded">download</span> Exportar Datos a CSV</button>
+            <div class="card">
+                <h3 class="kpi-title">Registro Completo de Evidencias (Cazadores de Señales)</h3>
+                <div style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Fotografía</th>
+                                <th>Reportante</th>
+                                <th>Descripción de Incidencia</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-cazadores-full">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: Kudos -->
+        <section id="section-kudos" class="page-section">
+            <button class="btn-view" style="margin-bottom: 20px;" onclick="exportCSV('kudos')"><span class="material-symbols-rounded">download</span> Exportar Datos a CSV</button>
+            
+            <div class="grid-kpi">
+                <div class="card">
+                    <h3 class="kpi-title">Top Receptores de Kudos (Líderes Positivos)</h3>
+                    <div id="kudos-top-receivers" style="display:flex; flex-direction:column; gap:12px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="kpi-title">Top Emisores de Kudos (Reconocedores)</h3>
+                    <div id="kudos-top-senders" style="display:flex; flex-direction:column; gap:12px;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="kpi-title">Registro Raw de Reconocimientos</h3>
+                <div style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>De (Emisor)</th>
+                                <th>Para (Receptor)</th>
+                                <th>Expectativa (Razón)</th>
+                                <th>Mensaje Adicional</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-kudos-full">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: Cultura INPO -->
+        <section id="section-culture" class="page-section">
+            <button class="btn-view" style="margin-bottom: 20px;" onclick="exportCSV('culture')"><span class="material-symbols-rounded">download</span> Exportar Datos a CSV</button>
+            <div class="card">
+                <h3 class="kpi-title">Evolución de Cultura de Seguridad (Likert 1-5 Diario)</h3>
+                <div style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="cultureLineChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 5: Fatiga -->
+        <section id="section-fatigue" class="page-section">
+            <button class="btn-view" style="margin-bottom: 20px;" onclick="exportCSV('fatigue')"><span class="material-symbols-rounded">download</span> Exportar Datos a CSV</button>
+            
+            <div class="grid-main" style="grid-template-columns: 1fr 1fr;">
+                <div class="card">
+                    <h3 class="kpi-title">Promedio de Factores FHO Generales</h3>
+                    <div style="position: relative; height: 350px; width: 100%;">
+                        <canvas id="fatigueRadarChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="kpi-title">Desglose de Registros Raw</h3>
+                    <div style="overflow-y:auto; max-height:400px;">
                         <table class="admin-table">
                             <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Reportante</th>
-                                    <th>Incidencia</th>
-                                    <th>Estado / Evidencia</th>
-                                </tr>
+                                <tr><th>Fecha</th><th>Usuario</th><th>Puntuación Media (0-3)</th></tr>
                             </thead>
-                            <tbody id="tb-reports">
-                                <tr><td colspan="4" style="text-align:center; opacity:0.5;">Cargando base de datos...</td></tr>
-                            </tbody>
+                            <tbody id="tb-fatigue-full"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <div style="display:flex; flex-direction:column; gap:20px;">
-                <!-- Culture Attributes Bar -->
+        <!-- SECCIÓN 6: Entrenamiento E+C -->
+        <section id="section-ec" class="page-section">
+            <button class="btn-view" style="margin-bottom: 20px;" onclick="exportCSV('ec')"><span class="material-symbols-rounded">download</span> Exportar Datos a CSV</button>
+            
+            <div class="grid-kpi">
                 <div class="card">
-                    <h3 class="kpi-title">Tendencias de Cultura (INPO)</h3>
-                    <div style="position: relative; height: 200px; width: 100%;">
-                        <canvas id="cultureChart"></canvas>
-                    </div>
+                    <div class="kpi-title">Tarjetas Educativas Jugadas</div>
+                    <div class="kpi-value"><span class="material-symbols-rounded" style="color:#00a8ff;">school</span> <span id="kpi-ec-total">0</span></div>
                 </div>
+                <div class="card">
+                    <div class="kpi-title">Tasa de Acierto Global</div>
+                    <div class="kpi-value"><span class="material-symbols-rounded" style="color:var(--green-neon);">verified</span> <span id="kpi-ec-rate">0%</span></div>
+                </div>
+            </div>
 
-                <!-- Leaderboard Kudos -->
-                <div class="card">
-                    <h3 class="kpi-title">Top Referentes (Kudos Recibidos)</h3>
-                    <div id="kudos-leaderboard" style="display:flex; flex-direction:column; gap:12px; margin-top:15px;">
-                        <!-- JS Inject Here -->
-                    </div>
+            <div class="card">
+                <h3 class="kpi-title">Gráfico de Ratio de Éxito E+C</h3>
+                <div style="position: relative; height: 300px; width: 100%; display:flex; justify-content:center;">
+                    <canvas id="ecPieChart"></canvas>
                 </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="admin-modal">
+        <div class="modal-content">
+            <span class="material-symbols-rounded close" onclick="document.getElementById('reportModal').style.display='none'">close</span>
+            <div id="rm-img-container"><img id="rm-img" src="" class="report-img-full"></div>
+            <h2 class="page-title" style="font-size:1.5rem; margin-bottom:10px;" id="rm-title">Detalles del Reporte</h2>
+            <p style="color:var(--text-muted); margin-bottom: 20px;" id="rm-meta">Fecha y Usuario</p>
+            <div style="padding:15px; background:rgba(0,0,0,0.2); border-left:4px solid var(--red-alert); border-radius:6px; font-size:1.1rem; line-height:1.5;" id="rm-text">
+                TEXTO AQUÍ
             </div>
         </div>
     </div>
-
-    <!-- Modal for Images -->
-    <div id="imgModal">
-        <span class="material-symbols-rounded close" onclick="document.getElementById('imgModal').style.display='none'">close</span>
-        <img id="modalImgSrc" src="">
-        <div id="modalTxt" style="margin-top:20px; font-size:1.1rem; max-width:80%; text-align:center; background:rgba(0,0,0,0.6); padding:15px; border-radius:8px;"></div>
+    
+    <!-- Kudos Modal (User details) -->
+    <div id="userKudosModal" class="admin-modal">
+        <div class="modal-content">
+            <span class="material-symbols-rounded close" onclick="document.getElementById('userKudosModal').style.display='none'">close</span>
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <img id="uk-avatar" src="" style="width:60px; height:60px; border-radius:30px; object-fit:cover; border:2px solid var(--gold);">
+                <div>
+                    <h2 class="page-title" style="font-size:1.5rem;" id="uk-name">Nombre</h2>
+                    <p style="color:var(--text-muted);" id="uk-company">Empresa</p>
+                </div>
+            </div>
+            
+            <h3 class="kpi-title" style="border-bottom:1px solid var(--glass-border); padding-bottom:10px;">Kudos Recibidos</h3>
+            <ul id="uk-received" style="list-style:none; padding-left:0; margin-bottom:20px; font-size:0.9rem;"></ul>
+            
+            <h3 class="kpi-title" style="border-bottom:1px solid var(--glass-border); padding-bottom:10px;">Kudos Enviados</h3>
+            <ul id="uk-sent" style="list-style:none; padding-left:0; font-size:0.9rem;"></ul>
+        </div>
     </div>
 
     <script>
@@ -320,13 +477,37 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqanFibHh6ZmZma2Z2dXJ3b3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDY1NTcsImV4cCI6MjA5MDUyMjU1N30.Xm4QNGKHlPgEX5BQjAh_qd_bPBUlG9b2Zl4hYzjG8so';
         const suba = supabase.createClient(supabaseUrl, supabaseKey);
 
-        let fatigueChartInstance = null;
-        let cultureChartInstance = null;
+        // Chart Instances
+        let charts = { overview: null, culture: null, fatigue: null, ec: null };
 
-        // Fetch Cloud Data
+        // Global Cache Database
+        let cachedDb = { users: [], reports: [], kudos: [], culture_checks: [] };
+
+        // Navigation
+        function switchSection(id, btnEl) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + id).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(btnEl) btnEl.classList.add('active');
+            
+            const titles = {
+                'overview': 'Visión General',
+                'cazadores': 'Cazadores de Señales (Raw)',
+                'kudos': 'Kudos P2P (Raw)',
+                'culture': 'Cultura INPO (Evolución)',
+                'fatigue': 'Analítica de Fatiga FHO',
+                'ec': 'Monitorización E+C'
+            };
+            document.getElementById('pageTitleText').innerText = titles[id] || 'Dashboard';
+            
+            // Re-render specifically purely based on cached data
+            renderSpecificSection(id);
+        }
+
+        // Main DB Fetch
         async function loadAdminData() {
             try {
-                // Descarga concurrente desde las tablas maestras PostgreSQL
                 const [ur, rr, kr, cr] = await Promise.all([
                     suba.from('users').select('*'),
                     suba.from('reports').select('*'),
@@ -334,161 +515,341 @@
                     suba.from('culture_checks').select('*')
                 ]);
 
-                // Mapear al formato esperado por el frontend v2
-                let db = {
+                cachedDb = {
                     users: (ur.data || []).map(u => ({...u, avatar: u.avatar_url})),
-                    reports: (rr.data || []).map(r => ({...r, reporterId: r.reporter_id, image: r.image_url, date: new Date(r.created_at).toLocaleDateString()})),
-                    kudos: (kr.data || []).map(k => ({...k, receiverId: k.receiver_id, date: new Date(k.created_at).toLocaleDateString()})),
-                    culture_checks: (cr.data || []).map(c => ({...c, value: c.value_json}))
+                    reports: (rr.data || []).map(r => ({...r, reporterId: r.reporter_id, image: r.image_url, dateRaw: r.created_at, date: new Date(r.created_at).toLocaleDateString()})),
+                    kudos: (kr.data || []).map(k => ({...k, receiverId: k.receiver_id, senderId: k.sender_id, dateRaw: k.created_at, date: new Date(k.created_at).toLocaleDateString()})),
+                    culture_checks: (cr.data || []).map(c => ({...c, value: c.value_json, dateRaw: c.created_at, date: new Date(c.created_at).toLocaleDateString()}))
                 };
                 
-                // 1. KPIs
-                document.getElementById('kpi-users').innerText = db.users.filter(u => u.name).length;
-                document.getElementById('kpi-reports').innerText = db.reports.length;
-                document.getElementById('kpi-kudos').innerText = db.kudos.length;
-                document.getElementById('kpi-checks').innerText = db.culture_checks.length;
-
-                const getUsr = (id) => db.users.find(x => x.id === id) || {name:'Desconocido', avatar:'https://via.placeholder.com/40', company:'N/A'};
-
-                // 2. Renderizar Tabla Cazadores
-                const tbRep = document.getElementById('tb-reports');
-                if(db.reports.length === 0) {
-                    tbRep.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No hay reportes de anomalías 🛡️</td></tr>';
-                } else {
-                    tbRep.innerHTML = db.reports.slice().reverse().map(r => {
-                        const u = getUsr(r.reporterId);
-                        const hasImg = !!r.image;
-                        const safeText = r.text ? r.text.replace(/'/g,"\\'").replace(/"/g,'&quot;') : '';
-                        const btn = hasImg ? `<button class="btn-view" onclick="showImg('${r.image}', '${safeText}')"><span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle;">panorama</span> Ver Foto</button>` : `<span class="status-badge status-green">Sólo Texto</span>`;
-                        return `
-                        <tr>
-                            <td style="color:var(--text-muted);">${r.date || 'Desconocida'}</td>
-                            <td>
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <img src="${u.avatar}" style="width:30px; height:30px; border-radius:50%; border:1px solid var(--text-muted);">
-                                    <div>
-                                        <div style="font-weight:600; font-family:'Outfit';">${u.name}</div>
-                                        <div style="font-size:0.75rem; color:var(--text-muted);">${u.company}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${safeText}">
-                                "${safeText}"
-                            </td>
-                            <td>${btn}</td>
-                        </tr>
-                        `;
-                    }).join('');
-                }
-
-                // 3. Leaderboard Kudos
-                const krGroup = {};
-                db.kudos.forEach(k => {
-                    if(!krGroup[k.receiverId]) krGroup[k.receiverId] = 0;
-                    krGroup[k.receiverId]++;
-                });
-                const sortedKudos = Object.entries(krGroup).sort((a,b)=>b[1]-a[1]).slice(0, 5);
-                const kbHtml = sortedKudos.length > 0 ? sortedKudos.map(([uid, cant], idx) => {
-                    const u = getUsr(uid);
-                    const color = idx === 0 ? 'var(--gold)' : (idx === 1 ? '#c0c0c0' : (idx===2 ? '#cd7f32' : 'var(--text-muted)'));
-                    return `
-                    <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.03); padding:10px; border-radius:8px;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <div style="font-size:1.2rem; font-family:'Outfit'; color:${color}; font-weight:700; width:20px; text-align:center;">#${idx+1}</div>
-                            <img src="${u.avatar}" style="width:36px; height:36px; border-radius:50%; border:2px solid ${color};">
-                            <div>
-                                <div style="font-weight:600; font-family:'Inter'; font-size:0.9rem;">${u.name}</div>
-                                <div style="font-size:0.75rem; color:var(--text-muted);">${u.company}</div>
-                            </div>
-                        </div>
-                        <div style="background:rgba(255, 215, 0, 0.1); color:var(--gold); padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.8rem;">
-                            ${cant} <span class="material-symbols-rounded" style="font-size:12px; vertical-align:middle;">star</span>
-                        </div>
-                    </div>
-                    `;
-                }).join('') : '<div style="color:var(--text-muted); text-align:center; padding:10px;">No hay reconocimientos repartidos aún.</div>';
-                document.getElementById('kudos-leaderboard').innerHTML = kbHtml;
-
-                // 4. Analítica de Gráficas (Chart.js)
-                // - Termómetro Fatiga (FHO)
-                let fat1=0, fat2=0, fat3=0;
-                db.culture_checks.filter(c => c.type === 'fatigue_thermometer').forEach(c => {
-                    if(!c.value) return;
-                    const vals = Object.values(c.value);
-                    const avg = vals.reduce((a,b)=>a+b,0) / (vals.length||1);
-                    if(avg <= 1.5) fat1++;
-                    else if(avg <= 2.5) fat2++;
-                    else fat3++;
-                });
+                // Refresca la vista que esté activa actualmente
+                const activeId = document.querySelector('.page-section.active').id.replace('section-','');
+                renderSpecificSection(activeId);
                 
-                // Mocks si está vacío para la Demo
-                if(fat1===0 && fat2===0 && fat3===0) { fat1=50; fat2=20; fat3=2; }
-
-                if(fatigueChartInstance) fatigueChartInstance.destroy();
-                fatigueChartInstance = new Chart(document.getElementById('fatigueChart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Óptimos (Verde)', 'Neutros (Naranja)', 'Alerta Fatiga (Rojo)'],
-                        datasets: [{
-                            data: [fat1, fat2, fat3],
-                            backgroundColor: ['rgba(0,255,136,0.8)', 'rgba(255,215,0,0.8)', 'rgba(255,71,87,0.8)'],
-                            borderWidth: 0,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8b9bb4', font: {family:'Inter'} } } }, cutout: '70%' }
-                });
-
-                // - Cultura INPO
-                // Contar cuántas Likerts (1-5) o checks se han mandado. Mock Demo por ahora.
-                const lT = db.culture_checks.filter(c => c.type === 'culture_likert').length;
-                let cV = [lT*4||40, lT*2||20, lT*3||35, lT||10, lT*5||55]; 
-                
-                if(cultureChartInstance) cultureChartInstance.destroy();
-                cultureChartInstance = new Chart(document.getElementById('cultureChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: ['Liderazgo', 'Responsabilidad', 'Entorno Apoyo', 'Aprendizaje', 'Actitud'],
-                        datasets: [{
-                            label: 'Respuestas Positivas (%)',
-                            data: [75 + (cV[0]%20), 80 + (cV[1]%15), 65 + (cV[2]%25), 85 + (cV[3]%10), 90 + (cV[4]%5)],
-                            backgroundColor: 'rgba(0, 255, 136, 0.5)',
-                            borderColor: 'rgba(0, 255, 136, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { 
-                        maintainAspectRatio: false,
-                        scales: { 
-                            y: { beginAtZero: true, max: 100, grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#8b9bb4'} },
-                            x: { grid:{display:false}, ticks:{color:'#8b9bb4'} }
-                        },
-                        plugins: { legend: { display:false } }
-                    }
-                });
+                // Render KPIs Globales siempre (están en Overview pero también pintan los recuadros numéricos)
+                renderOverviewKPIs();
 
             } catch(e) {
                 console.error(e);
-                alert("Error crítico ejecutando el panel: " + e.message);
+                alert("Error crítico conectando a BBDD: " + e.message);
             }
         }
 
-        window.showImg = function(url, text) {
-            document.getElementById('modalImgSrc').src = url;
-            document.getElementById('modalTxt').innerText = "Evidencia: " + text;
-            document.getElementById('imgModal').style.display = 'flex';
+        const getUsr = (id) => cachedDb.users.find(x => x.id === id) || {name:'Desconocido', avatar:'https://via.placeholder.com/40', company:'N/A'};
+
+        // Render Functions 
+        function renderSpecificSection(id) {
+            if(id === 'overview') { renderOverviewKPIs(); renderOverviewCharts(); }
+            else if(id === 'cazadores') renderCazadores();
+            else if(id === 'kudos') renderKudos();
+            else if(id === 'culture') renderCulture();
+            else if(id === 'fatigue') renderFatigue();
+            else if(id === 'ec') renderEc();
+        }
+
+        function renderOverviewKPIs() {
+            document.getElementById('kpi-users').innerText = cachedDb.users.length;
+            document.getElementById('kpi-reports').innerText = cachedDb.reports.length;
+            document.getElementById('kpi-kudos').innerText = cachedDb.kudos.length;
+            document.getElementById('kpi-checks').innerText = cachedDb.culture_checks.filter(c => c.type === 'culture_likert').length;
+        }
+
+        function renderOverviewCharts() {
+            // Overview Leaderboard
+            const krGroup = {};
+            cachedDb.kudos.forEach(k => { krGroup[k.receiverId] = (krGroup[k.receiverId]||0)+1; });
+            const sortedKudos = Object.entries(krGroup).sort((a,b)=>b[1]-a[1]).slice(0, 5);
+            document.getElementById('overview-leaderboard').innerHTML = sortedKudos.map(([uid, cant], idx) => {
+                const u = getUsr(uid);
+                const color = idx === 0 ? 'var(--gold)' : (idx === 1 ? '#c0c0c0' : (idx===2 ? '#cd7f32' : 'var(--text-muted)'));
+                return `<div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.03); padding:10px; border-radius:8px; cursor:pointer;" onclick="showUserKudos('${u.id}')">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="font-size:1.2rem; font-family:'Outfit'; color:${color}; font-weight:700; width:20px; text-align:center;">#${idx+1}</div>
+                        <img src="${u.avatar}" style="width:36px; height:36px; border-radius:50%; border:2px solid ${color};">
+                        <div><div style="font-weight:600; font-size:0.9rem;">${u.name}</div><div style="font-size:0.75rem; color:var(--text-muted);">${u.company}</div></div>
+                    </div>
+                    <div style="color:var(--gold); font-weight:700;">${cant} <span class="material-symbols-rounded" style="font-size:12px; vertical-align:middle;">star</span></div>
+                </div>`;
+            }).join('') || '<p style="color:var(--text-muted);">No hay datos suficientes.</p>';
+
+            // Overview Chart (Reports per day)
+            const dates = {};
+            cachedDb.reports.forEach(r => { dates[r.date] = (dates[r.date] || 0) + 1; });
+            // Sort by date naive
+            const sortedDates = Object.keys(dates).sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+            const dataCounts = sortedDates.map(d => dates[d]);
+
+            if(charts.overview) charts.overview.destroy();
+            charts.overview = new Chart(document.getElementById('overviewChart'), {
+                type: 'bar',
+                data: {
+                    labels: sortedDates.length ? sortedDates : ['Sin data'],
+                    datasets: [{
+                        label: 'Nuevas Evidencias',
+                        data: dataCounts.length ? dataCounts : [0],
+                        backgroundColor: 'rgba(255, 71, 87, 0.6)',
+                        borderColor: 'var(--red-alert)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1, color:'#8b9bb4'}, grid:{color:'rgba(255,255,255,0.05)'}}, x:{ticks:{color:'#8b9bb4'}, grid:{display:false}}} }
+            });
+        }
+
+        function renderCazadores() {
+            const tb = document.getElementById('tb-cazadores-full');
+            if(!cachedDb.reports.length) { tb.innerHTML = '<tr><td colspan="5">No hay evidencias.</td></tr>'; return; }
+            
+            tb.innerHTML = cachedDb.reports.slice().sort((a,b)=>new Date(b.dateRaw)-new Date(a.dateRaw)).map(r => {
+                const u = getUsr(r.reporterId);
+                const safeText = r.text ? r.text.replace(/'/g,"\\'").replace(/"/g,'&quot;') : '';
+                const thumb = r.image ? `<img src="${r.image}" class="thumbnail" onclick="showReport('${r.image}', '${safeText}', '${u.name}', '${r.date}')">` : '<div class="thumbnail" style="display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);"><span class="material-symbols-rounded">no_photography</span></div>';
+                
+                return `<tr>
+                    <td style="color:var(--text-muted);">${new Date(r.dateRaw).toLocaleString('es-ES')}</td>
+                    <td>${thumb}</td>
+                    <td><div style="font-weight:600;">${u.name}</div><div style="font-size:0.75rem; color:var(--text-muted);">${u.company}</div></td>
+                    <td style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">"${safeText}"</td>
+                    <td><span class="status-badge status-red">${r.status || 'Pendiente'}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderKudos() {
+            let received = {}, sent = {};
+            cachedDb.kudos.forEach(k => {
+                received[k.receiverId] = (received[k.receiverId]||0)+1;
+                sent[k.senderId] = (sent[k.senderId]||0)+1;
+            });
+            
+            const renderTop = (obj, targetId) => {
+                const sorted = Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0, 5);
+                document.getElementById(targetId).innerHTML = sorted.map(([uid, cant], idx) => {
+                    const u = getUsr(uid);
+                    return `<div style="display:flex; align-items:center; justify-content:space-between; padding:5px; cursor:pointer;" onclick="showUserKudos('${u.id}')">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img src="${u.avatar}" style="width:30px; height:30px; border-radius:50%;">
+                            <span style="font-size:0.9rem;">${u.name}</span>
+                        </div>
+                        <strong style="color:var(--gold);">${cant}</strong>
+                    </div>`;
+                }).join('') || '<p style="color:var(--text-muted);">Sin datos.</p>';
+            };
+            renderTop(received, 'kudos-top-receivers');
+            renderTop(sent, 'kudos-top-senders');
+
+            const tb = document.getElementById('tb-kudos-full');
+            tb.innerHTML = cachedDb.kudos.slice().sort((a,b)=>new Date(b.dateRaw)-new Date(a.dateRaw)).map(k => {
+                const s = getUsr(k.senderId);
+                const r = getUsr(k.receiverId);
+                return `<tr>
+                    <td style="color:var(--text-muted);">${new Date(k.dateRaw).toLocaleString('es-ES')}</td>
+                    <td><span style="font-weight:600; cursor:pointer;" onclick="showUserKudos('${s.id}')">${s.name}</span></td>
+                    <td><span style="font-weight:600; cursor:pointer;" onclick="showUserKudos('${r.id}')">${r.name}</span></td>
+                    <td style="color:var(--gold);">${k.reason || 'Expectativa Cumplida'}</td>
+                    <td>${k.msg || ''}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderCulture() {
+            const checks = cachedDb.culture_checks.filter(c => c.type === 'culture_likert');
+            const dates = {};
+            checks.forEach(c => {
+                const day = new Date(c.dateRaw).toLocaleDateString('es-ES');
+                if(!dates[day]) dates[day] = [];
+                dates[day].push(parseInt(c.value));
+            });
+            
+            const sortedDays = Object.keys(dates).sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+            const averages = sortedDays.map(d => dates[d].reduce((a,b)=>a+b,0) / dates[d].length);
+
+            if(charts.culture) charts.culture.destroy();
+            charts.culture = new Chart(document.getElementById('cultureLineChart'), {
+                type: 'line',
+                data: {
+                    labels: sortedDays.length ? sortedDays : ['No Data'],
+                    datasets: [{
+                        label: 'Media Likert (1-5)',
+                        data: averages.length ? averages : [0],
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0, 255, 136, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { maintainAspectRatio: false, scales: { y: { min: 1, max: 5, ticks:{stepSize:1, color:'#8b9bb4'}, grid:{color:'rgba(255,255,255,0.05)'}}, x:{ticks:{color:'#8b9bb4'}, grid:{display:false}} }, plugins: {legend:{display:false}} }
+            });
+        }
+
+        function renderFatigue() {
+            const fho = cachedDb.culture_checks.filter(c => c.type === 'fatigue_thermometer');
+            const totals = { fis: 0, men: 0, int: 0, pre: 0, apo: 0 };
+            const counts = { fis: 0, men: 0, int: 0, pre: 0, apo: 0 };
+
+            fho.forEach(c => {
+                if(c.value) {
+                    Object.keys(c.value).forEach(k => {
+                        if(totals[k] !== undefined) { totals[k] += c.value[k]; counts[k]++; }
+                    });
+                }
+            });
+
+            const labelsObj = {fis: 'Fisica', men: 'Mental', int: 'Interrupciones', pre:'Presión T.', apo:'Apoyo Equipo'};
+            const radarData = Object.keys(totals).map(k => counts[k] ? (totals[k]/counts[k]) : 0);
+
+            if(charts.fatigue) charts.fatigue.destroy();
+            charts.fatigue = new Chart(document.getElementById('fatigueRadarChart'), {
+                type: 'radar',
+                data: {
+                    labels: Object.values(labelsObj),
+                    datasets: [{
+                        label: 'Media Nivel (1=Bajo, 3=AltoRiesgo)',
+                        data: radarData,
+                        backgroundColor: 'rgba(255, 71, 87, 0.3)',
+                        borderColor: 'var(--red-alert)',
+                        pointBackgroundColor: 'var(--red-alert)'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 4, ticks: { display:false, stepSize:1 }, grid: {color: 'rgba(255,255,255,0.1)'}, pointLabels: {color:'#8b9bb4', font:{size:12, family:'Inter'}} } },
+                    plugins: { legend: { position: 'bottom', labels: {color:'white'} } }
+                }
+            });
+
+            document.getElementById('tb-fatigue-full').innerHTML = fho.slice().sort((a,b)=>new Date(b.dateRaw)-new Date(a.dateRaw)).map(f => {
+                const u = getUsr(f.user_id);
+                const avg = f.value ? (Object.values(f.value).reduce((a,b)=>a+b,0) / Object.values(f.value).length).toFixed(1) : 0;
+                return `<tr>
+                    <td style="color:var(--text-muted);">${new Date(f.dateRaw).toLocaleString('es-ES')}</td>
+                    <td>${u.name}</td>
+                    <td style="color:${avg<2?'var(--green-neon)':'var(--red-alert)'}; font-weight:bold;">${avg}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderEc() {
+            const ecData = cachedDb.culture_checks.filter(c => c.type === 'ec_training');
+            const total = ecData.length;
+            const correct = ecData.filter(c => c.value && c.value.correct === true).length;
+            const rate = total > 0 ? Math.round((correct/total)*100) : 0;
+
+            document.getElementById('kpi-ec-total').innerText = total;
+            document.getElementById('kpi-ec-rate').innerText = rate + '%';
+
+            if(charts.ec) charts.ec.destroy();
+            charts.ec = new Chart(document.getElementById('ecPieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aciertos', 'Fallos'],
+                    datasets: [{
+                        data: total > 0 ? [correct, total - correct] : [0, 1],
+                        backgroundColor: ['rgba(0, 255, 136, 0.8)', 'rgba(255, 71, 87, 0.8)'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels:{color:'#8b9bb4'} } } }
+            });
+        }
+
+        // Modals & User interactions
+        window.showReport = function(url, text, userName, date) {
+            document.getElementById('rm-img').style.display = url ? 'block' : 'none';
+            if(url) document.getElementById('rm-img').src = url;
+            document.getElementById('rm-meta').innerText = `Reportado por ${userName} el ${date}`;
+            document.getElementById('rm-text').innerText = text || "Sin descripción proporcionada.";
+            document.getElementById('reportModal').style.display = 'flex';
         };
 
-        // Initialize!
+        window.showUserKudos = function(userId) {
+            const u = getUsr(userId);
+            document.getElementById('uk-avatar').src = u.avatar;
+            document.getElementById('uk-name').innerText = u.name;
+            document.getElementById('uk-company').innerText = u.company;
+            
+            const rec = cachedDb.kudos.filter(k => k.receiverId === userId);
+            const sen = cachedDb.kudos.filter(k => k.senderId === userId);
+            
+            const getLi = (arr, isRec) => arr.map(k => {
+                const other = getUsr(isRec ? k.senderId : k.receiverId);
+                return `<li style="padding:10px; background:rgba(255,255,255,0.03); margin-bottom:5px; border-radius:6px;">
+                    <div style="color:var(--gold); font-weight:600; font-size:0.8rem; margin-bottom:4px;">${k.date} - ${k.reason||'General'}</div>
+                    <div style="color:var(--text-main); margin-bottom:4px;">"${k.msg||''}"</div>
+                    <div style="color:var(--text-muted); font-size:0.75rem;">${isRec?'De':'Para'}: ${other.name}</div>
+                </li>`;
+            }).join('');
+
+            document.getElementById('uk-received').innerHTML = rec.length ? getLi(rec, true) : '<li style="color:var(--text-muted);">Ninguno</li>';
+            document.getElementById('uk-sent').innerHTML = sen.length ? getLi(sen, false) : '<li style="color:var(--text-muted);">Ninguno</li>';
+            
+            document.getElementById('userKudosModal').style.display = 'flex';
+        }
+
+        // CSV Export Engine
+        window.exportCSV = function(moduleName) {
+            let data = [];
+            let header = [];
+            
+            switch(moduleName) {
+                case 'cazadores':
+                    header = ['ID', 'Fecha', 'Reportante', 'Empresa', 'Incidencia', 'URL_Evidencia', 'Estado'];
+                    data = cachedDb.reports.map(r => {
+                        const u = getUsr(r.reporterId);
+                        return [r.id, r.dateRaw, u.name, u.company, r.text||'', r.image||'', r.status||''];
+                    });
+                    break;
+                case 'kudos':
+                    header = ['ID', 'Fecha', 'De', 'Para', 'Expectativa', 'Mensaje'];
+                    data = cachedDb.kudos.map(k => {
+                        return [k.id, k.dateRaw, getUsr(k.senderId).name, getUsr(k.receiverId).name, k.reason||'', k.msg||''];
+                    });
+                    break;
+                case 'culture':
+                    header = ['ID', 'Fecha', 'Usuario', 'Valor_Likert_1A5'];
+                    data = cachedDb.culture_checks.filter(c => c.type === 'culture_likert').map(c => {
+                        return [c.id, c.dateRaw, getUsr(c.user_id).name, c.value];
+                    });
+                    break;
+                case 'fatigue':
+                    header = ['ID', 'Fecha', 'Usuario', 'Fisica', 'Mental', 'Interrupciones', 'Presion', 'Apoyo'];
+                    data = cachedDb.culture_checks.filter(c => c.type === 'fatigue_thermometer').map(c => {
+                        const v = c.value || {};
+                        return [c.id, c.dateRaw, getUsr(c.user_id).name, v.fis||'', v.men||'', v.int||'', v.pre||'', v.apo||''];
+                    });
+                    break;
+                case 'ec':
+                    header = ['ID', 'Fecha', 'Usuario', 'Acierto'];
+                    data = cachedDb.culture_checks.filter(c => c.type === 'ec_training').map(c => {
+                        const v = c.value || {};
+                        return [c.id, c.dateRaw, getUsr(c.user_id).name, v.correct ? 'SI' : 'NO'];
+                    });
+                    break;
+            }
+
+            if(!data.length) { alert("No hay datos en este módulo para exportar."); return; }
+
+            const escapeCsv = (str) => `"${String(str).replace(/"/g, '""')}"`;
+            const csvContent = [header.join(',')].concat(data.map(row => row.map(escapeCsv).join(','))).join('\n');
+            
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Export_${moduleName}_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // INIT
         window.addEventListener('load', () => {
             loadAdminData();
             
-            // REAL-TIME SYNC: Websockets Mágicos de Supabase
             suba.channel('admin-channel')
                 .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
-                    console.log('Cambio detectado en la nube!', payload);
-                    loadAdminData(); // Refrescar silenciosamente el dashboard
+                    console.log('Cambio detectado en realtime', payload);
+                    loadAdminData();
                 })
                 .subscribe();
         });

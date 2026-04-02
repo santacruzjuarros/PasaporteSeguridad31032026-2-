@@ -1323,10 +1323,17 @@ WESTINGHOUSE: Angel Gomez Saez, David Vilanova Doblas, Jose Gonzalez Grijalba`;
         };
 
         // --- E+C Tool ---
-        window.evalEc = function(isCorrect, btn) {
+        window.evalEc = async function(isCorrect, btn) {
             const card = document.getElementById('ecCard');
             const btns = card.querySelectorAll('.quiz-option');
             btns.forEach(b => b.onclick = null); // disable
+            
+            const u = getActiveUser();
+            if(u) {
+                try {
+                    await api.submitDailyCheck(u.id, 'ec_training', { correct: isCorrect });
+                } catch(e) {}
+            }
             
             if(isCorrect) {
                 btn.classList.add('correct');
